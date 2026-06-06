@@ -80,6 +80,8 @@ export default function FormPage() {
     finally { setSubmitting(false) }
   }
 
+  const [lightbox, setLightbox] = useState(false)
+
   const availableTickets = tickets.filter((t) => (t.remaining ?? t.quantity) > 0)
 
   const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
@@ -202,74 +204,112 @@ export default function FormPage() {
       {/* Right — Poster */}
       <div className="lg:w-7/12 xl:w-8/12 bg-surface-elevated flex flex-col items-center justify-center p-5 sm:p-8 lg:p-10 xl:p-12 min-h-[60vh] lg:min-h-screen overflow-y-auto">
         {selectedTicket ? (
-          <div className="w-full max-w-lg lg:max-w-xl xl:max-w-2xl animate-[fadeIn_0.3s_ease-out]">
-            <div className="rounded-card overflow-hidden bg-surface-card border border-surface-border shadow-card">
-              {selectedTicket.image_url && (
-                <div className="w-full bg-[#111]">
-                  <img
-                    src={selectedTicket.image_url}
-                    alt={selectedTicket.title}
-                    className="w-full h-auto max-h-[350px] sm:max-h-[420px] lg:max-h-[500px] xl:max-h-[580px] object-contain mx-auto"
-                  />
-                </div>
-              )}
-              <div className="p-6 sm:p-8">
-                <div className="flex items-center gap-2.5 mb-5">
-                  <span className="text-xs font-semibold tracking-widest uppercase text-accent-400 bg-accent-500/10 px-2.5 py-1 rounded-full">
-                    {selectedTicket.abbreviation}
-                  </span>
-                  <span className="text-xs text-text-dim">{stock} tickets left</span>
-                </div>
-
-                <h2 className="text-2xl sm:text-3xl font-bold text-text-primary mb-3 leading-[1.2]">
-                  {selectedTicket.title}
-                </h2>
-
-                {selectedTicket.description && (
-                  <p className="text-[15px] text-text-secondary leading-relaxed mb-6">
-                    {selectedTicket.description}
-                  </p>
+          <>
+            <div className="w-full max-w-2xl xl:max-w-3xl animate-[fadeIn_0.3s_ease-out]">
+              <div className="rounded-card overflow-hidden bg-surface-card border border-surface-border shadow-card flex flex-col sm:flex-row">
+                {/* Image side */}
+                {selectedTicket.image_url && (
+                  <button
+                    onClick={() => setLightbox(true)}
+                    className="sm:w-[45%] shrink-0 bg-[#111] flex items-center justify-center cursor-pointer group relative overflow-hidden border-b sm:border-b-0 sm:border-r border-surface-border"
+                  >
+                    <img
+                      src={selectedTicket.image_url}
+                      alt={selectedTicket.title}
+                      className="w-full h-auto max-h-[240px] sm:max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </button>
                 )}
 
-                <div className="space-y-3 mb-7">
-                  {selectedTicket.date_time && (
-                    <div className="flex items-center gap-3 text-sm text-text-secondary">
-                      <svg className="w-4 h-4 text-accent-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span>
-                        {new Date(selectedTicket.date_time).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                        &nbsp;&middot;&nbsp;
-                        {new Date(selectedTicket.date_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  )}
-                  {selectedTicket.location && (
-                    <div className="flex items-center gap-3 text-sm text-text-secondary">
-                      <svg className="w-4 h-4 text-accent-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span>{selectedTicket.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-end justify-between pt-5 border-t border-surface-border">
-                  <div>
-                    <p className="text-xs text-text-dim mb-1">Price per ticket</p>
-                    <p className="text-xl sm:text-2xl font-bold text-text-primary">{formatPrice(selectedTicket.price)}</p>
+                {/* Info side */}
+                <div className="flex-1 p-6 sm:p-7 lg:p-8 flex flex-col min-w-0">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <span className="text-xs font-semibold tracking-widest uppercase text-accent-400 bg-accent-500/10 px-2.5 py-1 rounded-full">
+                      {selectedTicket.abbreviation}
+                    </span>
+                    <span className="text-xs text-text-dim">{stock} tickets left</span>
                   </div>
-                  {form.quantity > 1 && (
-                    <div className="text-right">
-                      <p className="text-xs text-text-dim mb-1">{form.quantity} &times; tickets</p>
-                      <p className="text-lg font-bold text-accent-400">{formatPrice(selectedTicket.price * form.quantity)}</p>
-                    </div>
+
+                  <h2 className="text-xl sm:text-2xl lg:text-[28px] font-bold text-text-primary mb-2 leading-[1.2]">
+                    {selectedTicket.title}
+                  </h2>
+
+                  {selectedTicket.description && (
+                    <p className="text-[14px] text-text-secondary leading-relaxed mb-4 line-clamp-3">
+                      {selectedTicket.description}
+                    </p>
                   )}
+
+                  <div className="space-y-2.5 mb-5 flex-1">
+                    {selectedTicket.date_time && (
+                      <div className="flex items-center gap-2.5 text-[13px] text-text-secondary">
+                        <svg className="w-3.5 h-3.5 text-accent-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="truncate">
+                          {new Date(selectedTicket.date_time).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                          &nbsp;&middot;&nbsp;
+                          {new Date(selectedTicket.date_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    )}
+                    {selectedTicket.location && (
+                      <div className="flex items-center gap-2.5 text-[13px] text-text-secondary">
+                        <svg className="w-3.5 h-3.5 text-accent-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="truncate">{selectedTicket.location}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-end justify-between pt-4 border-t border-surface-border">
+                    <div>
+                      <p className="text-[11px] text-text-dim mb-0.5">Price per ticket</p>
+                      <p className="text-lg sm:text-xl font-bold text-text-primary">{formatPrice(selectedTicket.price)}</p>
+                    </div>
+                    {form.quantity > 1 && (
+                      <div className="text-right">
+                        <p className="text-[11px] text-text-dim mb-0.5">{form.quantity} &times;</p>
+                        <p className="text-base font-bold text-accent-400">{formatPrice(selectedTicket.price * form.quantity)}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* Lightbox */}
+            {lightbox && selectedTicket.image_url && (
+              <div
+                className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-[fadeIn_0.15s_ease-out]"
+                onClick={() => setLightbox(false)}
+              >
+                <button
+                  onClick={() => setLightbox(false)}
+                  className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <img
+                  src={selectedTicket.image_url}
+                  alt={selectedTicket.title}
+                  className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
+          </>
         ) : (
           <div className="w-full max-w-xl text-center">
             <p className="text-lg font-semibold text-text-secondary mb-2">No event selected</p>
