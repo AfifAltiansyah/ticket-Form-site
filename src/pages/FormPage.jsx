@@ -264,6 +264,23 @@ export default function FormPage() {
               <input type="tel" value={form.phone} onChange={updateField('phone')} placeholder="+62812..."
                 className="w-full px-4 py-3 border border-claude-hairline rounded-sm text-[17px] text-claude-ink placeholder:text-claude-ink-subtle outline-none focus:border-claude-brand focus:ring-1 focus:ring-claude-brand transition-shadow tracking-[-0.374px] bg-white" />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-claude-ink mb-1 tracking-[-0.224px]">Event *</label>
+              <select required value={form.ticket_id} onChange={updateField('ticket_id')}
+                className="w-full px-4 py-3 border border-claude-hairline rounded-sm text-[17px] text-claude-ink bg-white outline-none focus:border-claude-brand focus:ring-1 focus:ring-claude-brand transition-shadow tracking-[-0.374px] appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 fill=%22none%22><path d=%22M1 1.5l5 5 5-5%22 stroke=%22%239C8F86%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat">
+                <option value="">Select an event</option>
+                {availableTickets.map((ticket) => (
+                  <option key={ticket.id} value={ticket.id}>
+                    {ticket.title} — {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)} ({ticket.remaining ?? ticket.quantity} left)
+                  </option>
+                ))}
+              </select>
+              {selectedTicket && (
+                <p className="mt-1 text-xs text-claude-ink-subtle tracking-[-0.224px]">
+                  {selectedTicket.location} &middot; {selectedTicket.date_time ? new Date(selectedTicket.date_time).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-claude-ink mb-1 tracking-[-0.224px]">Quantity</label>
