@@ -57,6 +57,7 @@ export default function FormPage() {
   }
 
   const selectedTicket = tickets.find((t) => t.id === Number(form.ticket_id))
+  const stock = selectedTicket?.remaining ?? selectedTicket?.quantity ?? 0
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -64,8 +65,8 @@ export default function FormPage() {
     setResult(null)
     setError('')
 
-    if (selectedTicket && form.quantity > selectedTicket.quantity) {
-      setError(`Only ${selectedTicket.quantity} ticket${selectedTicket.quantity > 1 ? 's' : ''} available for ${selectedTicket.title}.`)
+    if (selectedTicket && form.quantity > stock) {
+      setError(`Only ${stock} ticket${stock > 1 ? 's' : ''} available for ${selectedTicket.title}.`)
       setSubmitting(false)
       return
     }
@@ -91,7 +92,7 @@ export default function FormPage() {
     }
   }
 
-  const availableTickets = tickets.filter((t) => t.quantity > 0)
+  const availableTickets = tickets.filter((t) => (t.remaining ?? t.quantity) > 0)
 
   if (loading) {
     return (
@@ -226,7 +227,7 @@ export default function FormPage() {
                 <option value="">Select an event</option>
                 {availableTickets.map((ticket) => (
                   <option key={ticket.id} value={ticket.id}>
-                    {ticket.title} — {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)} ({ticket.quantity} left)
+                    {ticket.title} — {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)} ({ticket.remaining ?? ticket.quantity} left)
                   </option>
                 ))}
               </select>
@@ -250,14 +251,14 @@ export default function FormPage() {
                     const val = Math.max(1, parseInt(e.target.value) || 1)
                     setForm((p) => ({ ...p, quantity: val }))
                   }}
-                  className={`w-full px-4 py-3 border rounded-sm text-[17px] text-claude-ink outline-none transition-shadow tracking-[-0.374px] bg-white ${selectedTicket && form.quantity > selectedTicket.quantity
+                  className={`w-full px-4 py-3 border rounded-sm text-[17px] text-claude-ink outline-none transition-shadow tracking-[-0.374px] bg-white ${form.quantity > stock
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-claude-hairline focus:border-claude-brand focus:ring-1 focus:ring-claude-brand'
                     }`}
                 />
-                {selectedTicket && form.quantity > selectedTicket.quantity && (
+                {form.quantity > stock && (
                   <p className="mt-1 text-xs text-red-600 tracking-[-0.224px]">
-                    Only {selectedTicket.quantity} ticket{selectedTicket.quantity > 1 ? 's' : ''} available.
+                    Only {stock} ticket{stock > 1 ? 's' : ''} available.
                   </p>
                 )}
               </div>
@@ -320,63 +321,75 @@ export default function FormPage() {
       <div className="lg:w-6/12 bg-claude-tile flex items-center justify-center p-8 lg:p-16 min-h-[50vh] lg:min-h-0">
         {selectedTicket ? (
           <div className="w-full max-w-[520px]">
-            <div className="bg-claude-tile border border-[rgba(255,255,255,0.08)] rounded-lg p-8 lg:p-10">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 rounded-full bg-claude-brand/20 flex items-center justify-center">
-                  <span className="text-xs font-bold text-claude-brand">
-                    {selectedTicket.abbreviation?.charAt(0) || 'E'}
-                  </span>
+            <div className="bg-claude-tile border border-[rgba(255,255,255,0.08)] rounded-lg overflow-hidden">
+              {selectedTicket.image_url && (
+                <div className="relative w-full aspect-[16/9] bg-neutral-900">
+                  <img
+                    src={selectedTicket.image_url}
+                    alt={selectedTicket.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-claude-tile via-claude-tile/20 to-transparent" />
                 </div>
-                <p className="text-xs font-semibold tracking-[0.2em] uppercase text-claude-tile-subtle">
-                  {selectedTicket.abbreviation}
-                </p>
-              </div>
-              <h2 className="text-[40px] font-semibold leading-[1.1] text-claude-tile-text mb-3">
-                {selectedTicket.title}
-              </h2>
-              {selectedTicket.description && (
-                <p className="text-[17px] leading-[1.47] text-claude-tile-subtle mb-8">
-                  {selectedTicket.description}
-                </p>
               )}
-              <div className="space-y-4 mb-8">
-                {selectedTicket.date_time && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-claude-brand mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm text-claude-tile-text font-medium">
-                        {new Date(selectedTicket.date_time).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                      </p>
-                      <p className="text-sm text-claude-tile-subtle">
-                        {new Date(selectedTicket.date_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
+              <div className="p-8 lg:p-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 rounded-full bg-claude-brand/20 flex items-center justify-center">
+                    <span className="text-xs font-bold text-claude-brand">
+                      {selectedTicket.abbreviation?.charAt(0) || 'E'}
+                    </span>
                   </div>
-                )}
-                {selectedTicket.location && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-claude-brand mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <p className="text-sm text-claude-tile-text">{selectedTicket.location}</p>
-                  </div>
-                )}
-              </div>
-              <div className="border-t border-[rgba(255,255,255,0.08)] pt-6 flex items-end justify-between">
-                <div>
-                  <p className="text-xs text-claude-tile-subtle mb-1">Price per ticket</p>
-                  <p className="text-[28px] font-semibold leading-[1.14] text-claude-tile-text">
-                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(selectedTicket.price)}
+                  <p className="text-xs font-semibold tracking-[0.2em] uppercase text-claude-tile-subtle">
+                    {selectedTicket.abbreviation}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-claude-tile-subtle mb-1">Available</p>
-                  <p className="text-sm font-medium text-claude-tile-text">
-                    {selectedTicket.quantity} ticket{selectedTicket.quantity > 1 ? 's' : ''}
+                <h2 className="text-[40px] font-semibold leading-[1.1] text-claude-tile-text mb-3">
+                  {selectedTicket.title}
+                </h2>
+                {selectedTicket.description && (
+                  <p className="text-[17px] leading-[1.47] text-claude-tile-subtle mb-8">
+                    {selectedTicket.description}
                   </p>
+                )}
+                <div className="space-y-4 mb-8">
+                  {selectedTicket.date_time && (
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-claude-brand mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-claude-tile-text font-medium">
+                          {new Date(selectedTicket.date_time).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                        <p className="text-sm text-claude-tile-subtle">
+                          {new Date(selectedTicket.date_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedTicket.location && (
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-claude-brand mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <p className="text-sm text-claude-tile-text">{selectedTicket.location}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="border-t border-[rgba(255,255,255,0.08)] pt-6 flex items-end justify-between">
+                  <div>
+                    <p className="text-xs text-claude-tile-subtle mb-1">Price per ticket</p>
+                    <p className="text-[28px] font-semibold leading-[1.14] text-claude-tile-text">
+                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(selectedTicket.price)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-claude-tile-subtle mb-1">Available</p>
+                    <p className="text-sm font-medium text-claude-tile-text">
+                      {stock} ticket{stock > 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
