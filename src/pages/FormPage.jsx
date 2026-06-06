@@ -19,6 +19,7 @@ export default function FormPage() {
     ticket_id: '',
     quantity: 1,
     payment_method: '',
+    drink: '',
   })
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export default function FormPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong') }
-      else { setResult(data.transaction); setForm({ name: '', email: '', phone: '', ticket_id: '', quantity: 1, payment_method: '' }) }
+      else { setResult(data.transaction); setForm({ name: '', email: '', phone: '', ticket_id: '', quantity: 1, payment_method: '', drink: '' }) }
     } catch { setError('Network error. Please try again.') }
     finally { setSubmitting(false) }
   }
@@ -191,6 +192,16 @@ export default function FormPage() {
                 {paymentOptions.map((o) => (
                   <option key={o.id} value={o.value}>{o.label}{(o.account_number || o.phone) ? ` \u2014 ${o.account_number || o.phone}` : ''}</option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Drink</label>
+              <select value={form.drink} onChange={updateField('drink')} className={selectClass}>
+                <option value="">No drink</option>
+                <option value="regular_tea">Regular Tea</option>
+                <option value="javanish_latte">Javanish Latte</option>
+                <option value="latte">Latte</option>
+                <option value="lemon_tea">Lemon Tea</option>
               </select>
             </div>
             <button type="submit" disabled={submitting}
