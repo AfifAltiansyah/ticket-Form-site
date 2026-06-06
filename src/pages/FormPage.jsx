@@ -46,8 +46,14 @@ export default function FormPage() {
   }, [])
 
   function updateField(field) {
-    return (e) =>
-      setForm((prev) => ({ ...prev, [field]: e.target.value }))
+    return (e) => {
+      const value = e.target.value
+      setForm((prev) => {
+        const next = { ...prev, [field]: value }
+        if (field === 'ticket_id') next.quantity = 1
+        return next
+      })
+    }
   }
 
   const selectedTicket = tickets.find((t) => t.id === Number(form.ticket_id))
@@ -196,7 +202,7 @@ export default function FormPage() {
             <option value="">Select an event</option>
             {tickets.map((ticket) => (
               <option key={ticket.id} value={ticket.id}>
-                {ticket.title} — {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)}
+                {ticket.title} — {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)} ({ticket.quantity} left)
               </option>
             ))}
           </select>
@@ -209,14 +215,19 @@ export default function FormPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-            <input
-              type="number"
-              min="1"
-              value={form.quantity}
-              onChange={(e) => setForm((p) => ({ ...p, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow text-sm"
-            />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+              <input
+                type="number"
+                min="1"
+                max={selectedTicket ? selectedTicket.quantity : 1}
+                value={form.quantity}
+                onChange={(e) => {
+                  const max = selectedTicket ? selectedTicket.quantity : 1
+                  const val = Math.max(1, Math.min(max, parseInt(e.target.value) || 1))
+                  setForm((p) => ({ ...p, quantity: val }))
+                }}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow text-sm"
+              />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Total</label>
