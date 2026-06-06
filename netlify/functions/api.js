@@ -30,7 +30,9 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: cors }
   }
 
-  const path = event.path.replace('/.netlify/functions/api', '')
+  const path = event.path
+    .replace('/.netlify/functions/api', '')
+    .replace('/api', '') || '/'
   const method = event.httpMethod
   console.log('[api-function] Request:', method, event.path, '→', CRM_API_URL + path)
   let body = {}
