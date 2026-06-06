@@ -1,6 +1,9 @@
 const CRM_API_URL = process.env.CRM_API_URL || 'https://rthxlprgtfuhntpcdhsh.supabase.co/functions/v1/api'
 const CRM_API_KEY = process.env.CRM_API_KEY || ''
 
+console.log('[api-function] CRM_API_URL:', CRM_API_URL)
+console.log('[api-function] CRM_API_KEY set:', !!CRM_API_KEY)
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, X-Api-Key',
@@ -29,6 +32,7 @@ exports.handler = async (event) => {
 
   const path = event.path.replace('/.netlify/functions/api', '')
   const method = event.httpMethod
+  console.log('[api-function] Request:', method, event.path, '→', CRM_API_URL + path)
   let body = {}
   try { body = JSON.parse(event.body || '{}') } catch {}
 
