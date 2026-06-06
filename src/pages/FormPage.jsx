@@ -245,7 +245,7 @@ export default function FormPage() {
             {paymentOptions.map((opt) => (
               <option key={opt.id} value={opt.value}>
                 {opt.label}
-                {opt.account_number ? ` — ${opt.account_number}` : ''}
+                {(opt.account_number || opt.phone) ? ` — ${opt.account_number || opt.phone}` : ''}
               </option>
             ))}
           </select>
