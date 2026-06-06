@@ -42,6 +42,7 @@ exports.handler = async (event) => {
     // POST /api/submit — enhanced transaction creation
     if (method === 'POST' && path === '/submit') {
       const { name, email, phone, ticket_id, quantity, payment_method } = body
+      console.log('[api-submit] body:', JSON.stringify(body))
 
       if (!name || !email || !ticket_id || !payment_method) {
         return errorResponse(400, 'Name, email, ticket, and payment method are required')
@@ -54,7 +55,8 @@ exports.handler = async (event) => {
       if (!ticketJson.data) return errorResponse(400, 'Ticket not found')
       const ticket = ticketJson.data
 
-      const qty = quantity || 1
+      const qty = Number.isFinite(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : 1
+      console.log('[api-submit] raw quantity:', quantity, '→ parsed qty:', qty)
       const total = ticket.price * qty
       const ts = Date.now()
       const abbrev = (ticket.abbreviation || 'TKT').toUpperCase()
