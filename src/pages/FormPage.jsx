@@ -1,97 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 
-function TicketCard({ ticket, isSelected, stackIndex, totalCards, hasSelection, onSelect }) {
-  const stock = ticket.remaining ?? ticket.quantity
-
-  let transform = ''
-  let opacity = 1
-  let zIndex = totalCards - stackIndex
-
-  if (!hasSelection) {
-    const yOffset = stackIndex * 32
-    const rotation = (stackIndex % 2 === 0 ? -1.5 : 1.5) * (stackIndex + 1) * 0.6
-    transform = `translateY(${yOffset}px) rotate(${rotation}deg)`
-    opacity = 1 - stackIndex * 0.08
-  } else if (isSelected) {
-    transform = 'translateY(0px) rotate(0deg) scale(1)'
-    zIndex = totalCards + 10
-  } else {
-    const yOffset = 20 + stackIndex * 28
-    const rotation = (stackIndex % 2 === 0 ? 2 : -2) * 0.8
-    transform = `translateY(${yOffset}px) rotate(${rotation}deg) scale(${0.96 - stackIndex * 0.015})`
-    opacity = 0.6 - stackIndex * 0.1
-  }
-
-  const formatPrice = (n) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(n)
-
-  const formatDate = (d) =>
-    new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-
-  return (
-    <button
-      key={ticket.id}
-      onClick={() => onSelect(ticket.id)}
-      className="absolute inset-x-0 cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-claude-brand focus-visible:ring-offset-4 focus-visible:ring-offset-claude-tile focus-visible:rounded-lg transition-all duration-500 hover:brightness-110"
-      style={{ transform, opacity, zIndex, transformOrigin: 'center top' }}
-    >
-      <div className={`rounded-xl overflow-hidden border bg-[#1F1C1A] ${isSelected ? 'border-white/15 shadow-product' : 'border-white/5'}`}>
-        {ticket.image_url ? (
-          <div className="relative w-full bg-neutral-900">
-            <img
-              src={ticket.image_url}
-              alt={ticket.title}
-              className="w-full h-auto max-h-[280px] lg:max-h-[340px] object-contain"
-            />
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#1F1C1A] to-transparent pointer-events-none" />
-          </div>
-        ) : (
-          <div className="w-full aspect-[16/10] bg-claude-brand/5 flex items-center justify-center">
-            <span className="text-5xl lg:text-6xl font-bold text-claude-brand/15">
-              {ticket.abbreviation?.charAt(0) || ticket.title?.charAt(0) || 'E'}
-            </span>
-          </div>
-        )}
-        <div className="p-4 lg:p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-claude-brand">
-              {ticket.abbreviation}
-            </span>
-            <span className="w-1 h-1 rounded-full bg-claude-tile-subtle/40" />
-            <span className="text-[10px] text-claude-tile-subtle">{stock} left</span>
-          </div>
-          <h3 className="text-base lg:text-lg font-semibold leading-snug text-claude-tile-text mb-1">
-            {ticket.title}
-          </h3>
-          <p className="text-xs text-claude-tile-subtle leading-relaxed line-clamp-2 mb-3">
-            {ticket.description || '\u00A0'}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-claude-tile-subtle">
-            {ticket.date_time && (
-              <span>{formatDate(ticket.date_time)} &middot; {formatTime(ticket.date_time)}</span>
-            )}
-            {ticket.location && <span className="truncate max-w-[180px]">{ticket.location}</span>}
-          </div>
-          <div className="mt-3 flex items-end justify-between">
-            <div>
-              <p className="text-[10px] text-claude-tile-subtle/60 mb-0.5">Price</p>
-              <p className="text-sm lg:text-base font-semibold text-claude-tile-text">
-                {formatPrice(ticket.price)}
-              </p>
-            </div>
-            {isSelected && (
-              <span className="text-[10px] font-medium text-claude-brand bg-claude-brand/10 px-2 py-1 rounded-full">
-                Selected
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </button>
-  )
+function formatPrice(n) {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(n)
 }
 
 export default function FormPage() {
@@ -154,7 +64,7 @@ export default function FormPage() {
     setResult(null)
     setError('')
     if (!form.ticket_id) {
-      setError('Please select an event from the cards.')
+      setError('Please select an event.')
       setSubmitting(false)
       return
     }
@@ -184,18 +94,6 @@ export default function FormPage() {
   }
 
   const availableTickets = tickets.filter((t) => (t.remaining ?? t.quantity) > 0)
-
-  const deckOrder = useMemo(() => {
-    if (!form.ticket_id) return availableTickets
-    const selected = availableTickets.find((t) => t.id === Number(form.ticket_id))
-    if (!selected) return availableTickets
-    const rest = availableTickets.filter((t) => t.id !== Number(form.ticket_id))
-    return [selected, ...rest]
-  }, [availableTickets, form.ticket_id])
-
-  function selectCard(ticketId) {
-    setForm((prev) => ({ ...prev, ticket_id: String(ticketId), quantity: 1 }))
-  }
 
   if (loading) {
     return (
@@ -227,9 +125,7 @@ export default function FormPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-claude-ink-subtle">Total</span>
-              <span className="font-semibold text-claude-ink">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(result.total_amount)}
-              </span>
+              <span className="font-semibold text-claude-ink">{formatPrice(result.total_amount)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-claude-ink-subtle">Payment</span>
@@ -254,10 +150,10 @@ export default function FormPage() {
   return (
     <div className="min-h-[calc(100vh-44px)] flex flex-col lg:flex-row">
       {/* Left — Form */}
-      <div className="lg:w-5/12 flex items-center justify-center px-6 py-12 lg:py-0 bg-claude-canvas">
+      <div className="lg:w-5/12 xl:w-4/12 flex items-start justify-center px-6 py-12 lg:py-16 bg-claude-canvas overflow-y-auto">
         <div className="w-full max-w-[400px]">
           <div className="mb-8">
-            <h1 className="text-[40px] font-semibold tracking-[-0.28px] leading-[1.1] text-claude-ink">Register</h1>
+            <h1 className="text-[36px] lg:text-[40px] font-semibold tracking-[-0.28px] leading-[1.1] text-claude-ink">Register</h1>
             <p className="text-[17px] text-claude-ink-subtle mt-1 tracking-[-0.374px]">Fill in your details to secure your spot.</p>
           </div>
 
@@ -288,7 +184,7 @@ export default function FormPage() {
                 <option value="">Select an event</option>
                 {availableTickets.map((ticket) => (
                   <option key={ticket.id} value={ticket.id}>
-                    {ticket.title} — {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)} ({ticket.remaining ?? ticket.quantity} left)
+                    {ticket.title} — {formatPrice(ticket.price)} ({ticket.remaining ?? ticket.quantity} left)
                   </option>
                 ))}
               </select>
@@ -311,7 +207,7 @@ export default function FormPage() {
               <div>
                 <label className="block text-sm font-medium text-claude-ink mb-1 tracking-[-0.224px]">Total</label>
                 <input type="text" readOnly
-                  value={selectedTicket ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(selectedTicket.price * form.quantity) : '\u2014'}
+                  value={selectedTicket ? formatPrice(selectedTicket.price * form.quantity) : '\u2014'}
                   className="w-full px-4 py-3 border border-claude-hairline bg-claude-sand rounded-sm text-[17px] font-medium text-claude-ink-muted cursor-default tracking-[-0.374px]" />
               </div>
             </div>
@@ -340,29 +236,147 @@ export default function FormPage() {
         </div>
       </div>
 
-      {/* Right — Card Deck */}
-      <div className="lg:w-7/12 bg-claude-tile flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 min-h-[50vh] lg:min-h-0 relative overflow-hidden">
-        <div className="relative w-full max-w-[380px] sm:max-w-[420px] lg:max-w-[480px] mx-auto" style={{ height: 'clamp(380px, 55vh, 540px)' }}>
-          {deckOrder.length === 0 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-[21px] font-semibold text-claude-tile-subtle">No events available</p>
+      {/* Right — Poster + Event Selector */}
+      <div className="lg:w-7/12 xl:w-8/12 bg-claude-tile flex flex-col min-h-[50vh] lg:min-h-[calc(100vh-44px)] lg:max-h-[calc(100vh-44px)] overflow-hidden">
+        {/* Poster area */}
+        <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 min-h-0">
+          {selectedTicket ? (
+            <div className="w-full max-w-lg lg:max-w-xl xl:max-w-2xl">
+              <div className="rounded-xl overflow-hidden border border-white/10 shadow-product bg-[#1F1C1A]">
+                {selectedTicket.image_url && (
+                  <div className="w-full bg-neutral-900">
+                    <img
+                      src={selectedTicket.image_url}
+                      alt={selectedTicket.title}
+                      className="w-full h-auto max-h-[320px] lg:max-h-[400px] object-contain mx-auto"
+                    />
+                    <div className="h-px bg-white/10" />
+                  </div>
+                )}
+                <div className="p-6 sm:p-8 lg:p-10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-claude-brand/15 flex items-center justify-center">
+                      <span className="text-sm font-bold text-claude-brand">
+                        {selectedTicket.abbreviation?.charAt(0) || 'E'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold tracking-[0.15em] uppercase text-claude-brand">
+                        {selectedTicket.abbreviation}
+                      </p>
+                      <p className="text-[10px] text-claude-tile-subtle">{stock} tickets available</p>
+                    </div>
+                  </div>
+
+                  <h2 className="text-2xl lg:text-[32px] xl:text-[36px] font-semibold leading-[1.15] text-claude-tile-text mb-2">
+                    {selectedTicket.title}
+                  </h2>
+
+                  {selectedTicket.description && (
+                    <p className="text-sm lg:text-[17px] leading-relaxed text-claude-tile-subtle mb-6">
+                      {selectedTicket.description}
+                    </p>
+                  )}
+
+                  <div className="space-y-3 mb-8">
+                    {selectedTicket.date_time && (
+                      <div className="flex items-center gap-3">
+                        <svg className="w-4 h-4 text-claude-brand shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm text-claude-tile-text/80">
+                          {new Date(selectedTicket.date_time).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                          &nbsp;&middot;&nbsp;
+                          {new Date(selectedTicket.date_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    )}
+                    {selectedTicket.location && (
+                      <div className="flex items-center gap-3">
+                        <svg className="w-4 h-4 text-claude-brand shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="text-sm text-claude-tile-text/80">{selectedTicket.location}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-5 border-t border-white/10 flex items-end justify-between">
+                    <div>
+                      <p className="text-[11px] text-claude-tile-subtle/60 mb-1">Price per ticket</p>
+                      <p className="text-xl lg:text-2xl font-semibold text-claude-tile-text">
+                        {formatPrice(selectedTicket.price)}
+                      </p>
+                    </div>
+                    {form.quantity > 1 && (
+                      <div className="text-right">
+                        <p className="text-[11px] text-claude-tile-subtle/60 mb-1">&times;{form.quantity} total</p>
+                        <p className="text-lg font-semibold text-claude-brand">
+                          {formatPrice(selectedTicket.price * form.quantity)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center px-4">
+              <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 lg:mb-6">
+                <svg className="w-7 h-7 lg:w-8 lg:h-8 text-white/15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                </svg>
+              </div>
+              <p className="text-lg lg:text-[21px] font-semibold text-claude-tile-subtle tracking-[0.231px]">Select an event</p>
+              <p className="text-sm text-white/20 mt-1 tracking-[-0.224px]">Choose from below or the form dropdown</p>
             </div>
           )}
-          {deckOrder.map((ticket, idx) => (
-            <TicketCard
-              key={ticket.id}
-              ticket={ticket}
-              isSelected={Number(form.ticket_id) === ticket.id}
-              stackIndex={idx}
-              totalCards={deckOrder.length}
-              hasSelection={!!form.ticket_id}
-              onSelect={selectCard}
-            />
-          ))}
         </div>
-        {deckOrder.length > 0 && !form.ticket_id && (
-          <p className="mt-4 sm:mt-6 text-xs text-claude-tile-subtle/60 tracking-[-0.12px]">Tap a card to select an event</p>
-        )}
+
+        {/* Event selector strip */}
+        <div className="border-t border-white/5 px-6 sm:px-8 lg:px-12 py-4 lg:py-5">
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
+            {availableTickets.map((ticket) => {
+              const isSelected = Number(form.ticket_id) === ticket.id
+              const remaining = ticket.remaining ?? ticket.quantity
+
+              return (
+                <button
+                  key={ticket.id}
+                  onClick={() => setForm((prev) => ({ ...prev, ticket_id: String(ticket.id), quantity: 1 }))}
+                  className={`shrink-0 snap-start text-left rounded-xl border transition-all duration-300 active:scale-[0.97] ${
+                    isSelected
+                      ? 'border-claude-brand bg-claude-brand/10 scale-105'
+                      : 'border-white/5 bg-white/5 hover:border-white/15 hover:bg-white/[0.07]'
+                  }`}
+                >
+                  <div className="w-[140px] sm:w-[160px] lg:w-[180px]">
+                    <div className="aspect-[3/2] bg-neutral-800 rounded-t-xl overflow-hidden flex items-center justify-center">
+                      {ticket.image_url ? (
+                        <img src={ticket.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-claude-brand/20">
+                          {ticket.abbreviation?.slice(0, 2) || ticket.title?.slice(0, 2) || 'EV'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs font-semibold text-claude-tile-text truncate">{ticket.title}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-[11px] font-medium text-claude-brand">{formatPrice(ticket.price)}</p>
+                        <p className="text-[10px] text-claude-tile-subtle/70">{remaining} left</p>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+            {availableTickets.length === 0 && (
+              <p className="text-sm text-claude-tile-subtle/50 py-2">No events available</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
