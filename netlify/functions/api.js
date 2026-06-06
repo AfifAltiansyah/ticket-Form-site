@@ -1,9 +1,6 @@
 const CRM_API_URL = process.env.CRM_API_URL || 'https://rthxlprgtfuhntpcdhsh.supabase.co/functions/v1/api'
 const CRM_API_KEY = process.env.CRM_API_KEY || ''
 
-console.log('[api-function] CRM_API_URL:', CRM_API_URL)
-console.log('[api-function] CRM_API_KEY set:', !!CRM_API_KEY)
-
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, X-Api-Key',
@@ -34,7 +31,6 @@ exports.handler = async (event) => {
     .replace('/.netlify/functions/api', '')
     .replace('/api', '') || '/'
   const method = event.httpMethod
-  console.log('[api-function] Request:', method, event.path, '→', CRM_API_URL + path)
   let body = {}
   try { body = JSON.parse(event.body || '{}') } catch {}
 
@@ -42,7 +38,6 @@ exports.handler = async (event) => {
     // POST /api/submit — enhanced transaction creation
     if (method === 'POST' && path === '/submit') {
       const { name, email, phone, ticket_id, quantity, payment_method } = body
-      console.log('[api-submit] body:', JSON.stringify(body))
 
       if (!name || !email || !ticket_id || !payment_method) {
         return errorResponse(400, 'Name, email, ticket, and payment method are required')
@@ -56,7 +51,6 @@ exports.handler = async (event) => {
       const ticket = ticketJson.data
 
       const qty = Number.isFinite(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : 1
-      console.log('[api-submit] raw quantity:', quantity, '→ parsed qty:', qty)
       const total = ticket.price * qty
       const ts = Date.now()
       const abbrev = (ticket.abbreviation || 'TKT').toUpperCase()

@@ -59,7 +59,6 @@ export default function FormPage() {
     setError('')
 
     try {
-      console.log('[form-submit] sending:', form)
       const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
