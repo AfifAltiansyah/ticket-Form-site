@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,12 +12,18 @@
   }
 
   body {
-    color: #1E1916;
+    background: #0f0f0f;
+    color: #ffffff;
   }
 
   *:focus-visible {
-    outline: 2px solid #D97757;
+    outline: 2px solid #4f46e5;
     outline-offset: 2px;
     border-radius: 4px;
   }
+}
+
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 }
