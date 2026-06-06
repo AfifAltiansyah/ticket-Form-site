@@ -36,7 +36,8 @@ export default function FormPage() {
           (optionsJson.data || []).filter((o) => o.is_active)
         )
       } catch (err) {
-        setError('Failed to load data. Please try again later.')
+        setError(err.message || 'Failed to load data. Please try again later.')
+        console.error('Fetch error:', err)
       } finally {
         setLoading(false)
       }
