@@ -64,6 +64,12 @@ export default function FormPage() {
     setResult(null)
     setError('')
 
+    if (selectedTicket && form.quantity > selectedTicket.quantity) {
+      setError(`Only ${selectedTicket.quantity} ticket${selectedTicket.quantity > 1 ? 's' : ''} available for ${selectedTicket.title}.`)
+      setSubmitting(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/submit', {
         method: 'POST',
@@ -200,7 +206,7 @@ export default function FormPage() {
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow text-sm bg-white"
           >
             <option value="">Select an event</option>
-            {tickets.map((ticket) => (
+            {tickets.filter((t) => t.quantity > 0).map((ticket) => (
               <option key={ticket.id} value={ticket.id}>
                 {ticket.title} — {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)} ({ticket.quantity} left)
               </option>
@@ -219,15 +225,22 @@ export default function FormPage() {
               <input
                 type="number"
                 min="1"
-                max={selectedTicket ? selectedTicket.quantity : 1}
                 value={form.quantity}
                 onChange={(e) => {
-                  const max = selectedTicket ? selectedTicket.quantity : 1
-                  const val = Math.max(1, Math.min(max, parseInt(e.target.value) || 1))
+                  const val = Math.max(1, parseInt(e.target.value) || 1)
                   setForm((p) => ({ ...p, quantity: val }))
                 }}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow text-sm"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition-shadow text-sm ${
+                  selectedTicket && form.quantity > selectedTicket.quantity
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-brand-500 focus:border-brand-500'
+                }`}
               />
+              {selectedTicket && form.quantity > selectedTicket.quantity && (
+                <p className="mt-1 text-xs text-red-600">
+                  Only {selectedTicket.quantity} ticket{selectedTicket.quantity > 1 ? 's' : ''} available.
+                </p>
+              )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Total</label>
