@@ -20,6 +20,7 @@ export default function FormPage() {
     quantity: 1,
     payment_method: '',
     drink: '',
+    proof: null,
   })
 
   useEffect(() => {
@@ -69,14 +70,22 @@ export default function FormPage() {
       setError(`Only ${stock} ticket${stock > 1 ? 's' : ''} available.`); setSubmitting(false); return
     }
     try {
+      let proofBase64 = null
+      if (form.proof) {
+        proofBase64 = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.readAsDataURL(form.proof)
+        })
+      }
       const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, proof: proofBase64, proof_name: form.proof?.name }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong') }
-      else { setResult(data.transaction); setForm({ name: '', email: '', phone: '', ticket_id: '', quantity: 1, payment_method: '', drink: '' }) }
+      else { setResult(data.transaction); setForm({ name: '', email: '', phone: '', ticket_id: '', quantity: 1, payment_method: '', drink: '', proof: null }) }
     } catch { setError('Network error. Please try again.') }
     finally { setSubmitting(false) }
   }
@@ -203,6 +212,39 @@ export default function FormPage() {
                 <option value="latte">Latte</option>
                 <option value="lemon_tea">Lemon Tea</option>
               </select>
+            </div>
+            <div>
+              <label className={labelClass}>Proof of Transfer</label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setForm((p) => ({ ...p, proof: e.target.files[0] || null }))}
+                  className="block w-full text-sm text-text-muted file:mr-4 file:py-2.5 file:px-5 file:rounded-btn file:border-0 file:text-sm file:font-medium file:bg-accent-600 file:text-white hover:file:bg-accent-500 file:cursor-pointer file:transition-colors"
+                />
+              </div>
+              {form.proof && (
+                <div className="mt-2 flex items-start gap-3 bg-surface-card rounded-btn p-3 border border-surface-border">
+                  <img
+                    src={URL.createObjectURL(form.proof)}
+                    alt="Preview"
+                    className="w-14 h-14 rounded object-cover shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs text-text-primary truncate">{form.proof.name}</p>
+                    <p className="text-[11px] text-text-dim mt-0.5">{(form.proof.size / 1024).toFixed(0)} KB</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, proof: null }))}
+                    className="ml-auto p-1 text-text-dim hover:text-red-400 transition-colors shrink-0"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
             <button type="submit" disabled={submitting}
               className="w-full py-3.5 bg-accent-600 text-white rounded-btn text-[15px] font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 mt-1">
