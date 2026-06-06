@@ -25,6 +25,9 @@ export default function FormPage() {
           fetch('/api/external/payment_options'),
         ])
 
+        if (!ticketsRes.ok) throw new Error(`Tickets API: ${ticketsRes.status}`)
+        if (!optionsRes.ok) throw new Error(`Options API: ${optionsRes.status}`)
+
         const ticketsJson = await ticketsRes.json()
         const optionsJson = await optionsRes.json()
 
