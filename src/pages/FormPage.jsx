@@ -22,27 +22,40 @@ function TicketCard({ ticket, isSelected, stackIndex, totalCards, hasSelection, 
     opacity = 0.6 - stackIndex * 0.1
   }
 
+  const formatPrice = (n) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(n)
+
+  const formatDate = (d) =>
+    new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+
+  const formatTime = (d) =>
+    new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+
   return (
     <button
       key={ticket.id}
       onClick={() => onSelect(ticket.id)}
-      className={`absolute inset-x-0 cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-claude-brand focus-visible:ring-offset-4 focus-visible:ring-offset-claude-tile focus-visible:rounded-lg transition-all duration-500 ${isSelected ? 'hover:shadow-2xl' : 'hover:opacity-90'}`}
+      className="absolute inset-x-0 cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-claude-brand focus-visible:ring-offset-4 focus-visible:ring-offset-claude-tile focus-visible:rounded-lg transition-all duration-500 hover:brightness-110"
       style={{ transform, opacity, zIndex, transformOrigin: 'center top' }}
     >
-      <div className={`rounded-lg overflow-hidden border ${isSelected ? 'border-white/15 shadow-product' : 'border-white/5'} bg-[#22201D]`}>
+      <div className={`rounded-xl overflow-hidden border bg-[#1F1C1A] ${isSelected ? 'border-white/15 shadow-product' : 'border-white/5'}`}>
         {ticket.image_url ? (
-          <div className="relative w-full aspect-[2/1] bg-neutral-800">
-            <img src={ticket.image_url} alt={ticket.title} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#22201D] via-[#22201D]/30 to-transparent" />
+          <div className="relative w-full bg-neutral-900">
+            <img
+              src={ticket.image_url}
+              alt={ticket.title}
+              className="w-full h-auto max-h-[280px] lg:max-h-[340px] object-contain"
+            />
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#1F1C1A] to-transparent pointer-events-none" />
           </div>
         ) : (
-          <div className="w-full aspect-[2/1] bg-claude-brand/10 flex items-center justify-center">
-            <span className="text-5xl font-bold text-claude-brand/20">
+          <div className="w-full aspect-[16/10] bg-claude-brand/5 flex items-center justify-center">
+            <span className="text-5xl lg:text-6xl font-bold text-claude-brand/15">
               {ticket.abbreviation?.charAt(0) || ticket.title?.charAt(0) || 'E'}
             </span>
           </div>
         )}
-        <div className="p-5">
+        <div className="p-4 lg:p-5">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-claude-brand">
               {ticket.abbreviation}
@@ -50,25 +63,29 @@ function TicketCard({ ticket, isSelected, stackIndex, totalCards, hasSelection, 
             <span className="w-1 h-1 rounded-full bg-claude-tile-subtle/40" />
             <span className="text-[10px] text-claude-tile-subtle">{stock} left</span>
           </div>
-          <h3 className="text-lg font-semibold leading-snug text-claude-tile-text mb-1">{ticket.title}</h3>
+          <h3 className="text-base lg:text-lg font-semibold leading-snug text-claude-tile-text mb-1">
+            {ticket.title}
+          </h3>
           <p className="text-xs text-claude-tile-subtle leading-relaxed line-clamp-2 mb-3">
             {ticket.description || '\u00A0'}
           </p>
-          <div className="flex items-center gap-4 text-xs text-claude-tile-subtle">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-claude-tile-subtle">
             {ticket.date_time && (
-              <span>{new Date(ticket.date_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <span>{formatDate(ticket.date_time)} &middot; {formatTime(ticket.date_time)}</span>
             )}
-            {ticket.location && <span className="truncate">{ticket.location}</span>}
+            {ticket.location && <span className="truncate max-w-[180px]">{ticket.location}</span>}
           </div>
           <div className="mt-3 flex items-end justify-between">
             <div>
               <p className="text-[10px] text-claude-tile-subtle/60 mb-0.5">Price</p>
-              <p className="text-base font-semibold text-claude-tile-text">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(ticket.price)}
+              <p className="text-sm lg:text-base font-semibold text-claude-tile-text">
+                {formatPrice(ticket.price)}
               </p>
             </div>
             {isSelected && (
-              <span className="text-[10px] font-medium text-claude-brand bg-claude-brand/10 px-2 py-1 rounded-full">Selected</span>
+              <span className="text-[10px] font-medium text-claude-brand bg-claude-brand/10 px-2 py-1 rounded-full">
+                Selected
+              </span>
             )}
           </div>
         </div>
@@ -324,8 +341,8 @@ export default function FormPage() {
       </div>
 
       {/* Right — Card Deck */}
-      <div className="lg:w-7/12 bg-claude-tile flex flex-col items-center justify-center p-8 lg:p-12 min-h-[60vh] lg:min-h-0 relative overflow-hidden">
-        <div className="relative w-full max-w-[480px] mx-auto" style={{ height: '520px' }}>
+      <div className="lg:w-7/12 bg-claude-tile flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 min-h-[50vh] lg:min-h-0 relative overflow-hidden">
+        <div className="relative w-full max-w-[380px] sm:max-w-[420px] lg:max-w-[480px] mx-auto" style={{ height: 'clamp(380px, 55vh, 540px)' }}>
           {deckOrder.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-[21px] font-semibold text-claude-tile-subtle">No events available</p>
@@ -344,7 +361,7 @@ export default function FormPage() {
           ))}
         </div>
         {deckOrder.length > 0 && !form.ticket_id && (
-          <p className="mt-6 text-xs text-claude-tile-subtle/60 tracking-[-0.12px]">Tap a card to select an event</p>
+          <p className="mt-4 sm:mt-6 text-xs text-claude-tile-subtle/60 tracking-[-0.12px]">Tap a card to select an event</p>
         )}
       </div>
     </div>
