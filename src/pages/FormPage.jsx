@@ -155,7 +155,7 @@ export default function FormPage() {
     <div className="min-h-[calc(100vh-44px)] flex flex-col lg:flex-row">
       {/* Left — Form */}
       <div className="lg:w-6/12 flex items-center justify-center px-6 py-12 lg:py-0 bg-claude-canvas">
-        <div className="w-full max-w-[420px]">
+        <div className="w-full max-w-[520px]">
           <div className="mb-8">
             <h1 className="text-[40px] font-semibold tracking-[-0.28px] leading-[1.1] text-claude-ink">
               Register
@@ -250,11 +250,10 @@ export default function FormPage() {
                     const val = Math.max(1, parseInt(e.target.value) || 1)
                     setForm((p) => ({ ...p, quantity: val }))
                   }}
-                  className={`w-full px-4 py-3 border rounded-sm text-[17px] text-claude-ink outline-none transition-shadow tracking-[-0.374px] bg-white ${
-                    selectedTicket && form.quantity > selectedTicket.quantity
+                  className={`w-full px-4 py-3 border rounded-sm text-[17px] text-claude-ink outline-none transition-shadow tracking-[-0.374px] bg-white ${selectedTicket && form.quantity > selectedTicket.quantity
                       ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                       : 'border-claude-hairline focus:border-claude-brand focus:ring-1 focus:ring-claude-brand'
-                  }`}
+                    }`}
                 />
                 {selectedTicket && form.quantity > selectedTicket.quantity && (
                   <p className="mt-1 text-xs text-red-600 tracking-[-0.224px]">
