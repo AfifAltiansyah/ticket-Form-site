@@ -239,16 +239,16 @@ export default function FormPage() {
       {/* Right — Poster + Event Selector */}
       <div className="lg:w-7/12 xl:w-8/12 bg-claude-tile flex flex-col min-h-[50vh] lg:min-h-[calc(100vh-44px)] lg:max-h-[calc(100vh-44px)] overflow-hidden">
         {/* Poster area */}
-        <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 min-h-0">
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 min-h-0">
           {selectedTicket ? (
-            <div className="w-full max-w-lg lg:max-w-xl xl:max-w-2xl">
+            <div className="w-full max-w-xl lg:max-w-2xl xl:max-w-3xl">
               <div className="rounded-xl overflow-hidden border border-white/10 shadow-product bg-[#1F1C1A]">
                 {selectedTicket.image_url && (
                   <div className="w-full bg-neutral-900">
                     <img
                       src={selectedTicket.image_url}
                       alt={selectedTicket.title}
-                      className="w-full h-auto max-h-[320px] lg:max-h-[400px] object-contain mx-auto"
+                      className="w-full h-auto max-h-[420px] lg:max-h-[520px] xl:max-h-[600px] object-contain mx-auto"
                     />
                     <div className="h-px bg-white/10" />
                   </div>
