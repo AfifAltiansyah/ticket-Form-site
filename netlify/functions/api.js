@@ -139,6 +139,13 @@ exports.handler = async (event) => {
       }
     }
 
+    // POST /api/checkin — check in by unique code
+    if (method === 'POST' && path === '/checkin') {
+      const { unique_code } = body
+      if (!unique_code) return errorResponse(400, 'Unique code is required')
+      return proxyToCrm(method, '/external/checkin', body)
+    }
+
     // All other requests — proxy directly to CRM
     return proxyToCrm(method, path, body)
   } catch (err) {
