@@ -37,7 +37,7 @@ exports.handler = async (event) => {
   try {
     // POST /api/submit — enhanced transaction creation
     if (method === 'POST' && path === '/submit') {
-      const { name, email, phone, ticket_id, quantity, payment_method } = body
+      const { name, email, phone, ticket_id, quantity, payment_method, drink, proof, proof_name } = body
 
       if (!name || !email || !ticket_id || !payment_method) {
         return errorResponse(400, 'Name, email, ticket, and payment method are required')
@@ -69,6 +69,11 @@ exports.handler = async (event) => {
         payment_method: payment_method,
         status: 'pending',
         purchased_at: new Date().toISOString(),
+      }
+      if (drink) payload.drink = drink
+      if (proof) {
+        payload.proof = proof
+        payload.proof_name = proof_name || ''
       }
 
       const result = await fetch(`${CRM_API_URL}/external/transactions`, {
