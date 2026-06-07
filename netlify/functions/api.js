@@ -79,6 +79,7 @@ exports.handler = async (event) => {
 
       console.log('[api-submit] sending to CRM, payload keys:', Object.keys(payload))
       let result
+      let proofWarning = null
       try {
         result = await fetch(`${CRM_API_URL}/external/transactions`, {
           method: 'POST',
@@ -89,7 +90,33 @@ exports.handler = async (event) => {
         console.error('[api-submit] CRM fetch failed:', fetchErr.message)
         return errorResponse(502, 'CRM unreachable')
       }
-      const resultData = await result.json()
+
+      // If proof caused an error, retry without it
+      if (!result.ok && proof) {
+        console.log('[api-submit] Retrying without proof...')
+        proofWarning = 'Proof could not be saved'
+        delete payload.proof
+        delete payload.proof_name
+        try {
+          result = await fetch(`${CRM_API_URL}/external/transactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY },
+            body: JSON.stringify(payload),
+          })
+        } catch (fetchErr) {
+          console.error('[api-submit] CRM retry failed:', fetchErr.message)
+          return errorResponse(502, 'CRM unreachable')
+        }
+      }
+
+      // Try to parse the response
+      let resultData
+      try {
+        resultData = await result.json()
+      } catch {
+        console.error('[api-submit] CRM response is not JSON, status:', result.status)
+        return errorResponse(502, 'CRM returned invalid response')
+      }
 
       if (!result.ok) return errorResponse(result.status, resultData.error || 'Failed')
 
@@ -98,6 +125,7 @@ exports.handler = async (event) => {
         headers: cors,
         body: JSON.stringify({
           success: true,
+          warning: proofWarning || undefined,
           transaction: {
             id: resultData.data.id,
             transaction_id: resultData.data.transaction_id,

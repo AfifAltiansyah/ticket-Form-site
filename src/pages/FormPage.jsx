@@ -114,7 +114,11 @@ export default function FormPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong') }
-      else { setResult(data.transaction); setForm({ name: '', email: '', phone: '', ticket_id: '', quantity: 1, payment_method: '', drink: '', proof: null }) }
+      else {
+        setResult(data.transaction)
+        if (data.warning) setError(data.warning)
+        setForm({ name: '', email: '', phone: '', ticket_id: '', quantity: 1, payment_method: '', drink: '', proof: null })
+      }
     } catch { setError('Network error. Please try again.') }
     finally { setSubmitting(false) }
   }
