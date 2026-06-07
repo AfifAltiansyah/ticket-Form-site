@@ -7,9 +7,9 @@ function apiProxy() {
 
   return {
     name: 'api-proxy',
-    config() {
-      target = process.env.VITE_CRM_API_URL || ''
-      apiKey = process.env.VITE_CRM_API_KEY || ''
+    configResolved(config) {
+      target = config.env.VITE_CRM_API_URL || process.env.VITE_CRM_API_URL || ''
+      apiKey = config.env.VITE_CRM_API_KEY || process.env.VITE_CRM_API_KEY || ''
     },
     configureServer(server) {
       if (!target || !apiKey) {
