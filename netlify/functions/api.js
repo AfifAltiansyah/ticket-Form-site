@@ -139,6 +139,11 @@ exports.handler = async (event) => {
       }
     }
 
+    // GET /api/transactions — proxy to CRM transactions list
+    if (method === 'GET' && path === '/transactions') {
+      return proxyToCrm(method, '/external/transactions', body)
+    }
+
     // POST /api/checkin — check in by unique code
     if (method === 'POST' && path === '/checkin') {
       const { unique_code } = body
