@@ -284,6 +284,20 @@ export default function FormPage() {
               {submitting ? 'Processing...' : 'Submit Registration'}
             </button>
           </form>
+
+          <div className="mt-8 pt-6 border-t border-surface-border">
+            <div className="flex items-center gap-4">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=https://daftar-ticket.netlify.app/checkin"
+                alt="Check-in QR"
+                className="w-[72px] h-[72px] rounded-btn bg-white p-1.5"
+              />
+              <div>
+                <p className="text-xs font-medium text-text-secondary">Staff Check-in</p>
+                <p className="text-[11px] text-text-dim mt-0.5">Scan to open the check-in page</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
