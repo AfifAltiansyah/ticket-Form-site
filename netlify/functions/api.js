@@ -72,15 +72,23 @@ exports.handler = async (event) => {
       }
       if (drink) payload.drink = drink
       if (proof) {
+        console.log('[api-submit] proof size:', proof.length, 'chars')
         payload.proof = proof
         payload.proof_name = proof_name || ''
       }
 
-      const result = await fetch(`${CRM_API_URL}/external/transactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY },
-        body: JSON.stringify(payload),
-      })
+      console.log('[api-submit] sending to CRM, payload keys:', Object.keys(payload))
+      let result
+      try {
+        result = await fetch(`${CRM_API_URL}/external/transactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY },
+          body: JSON.stringify(payload),
+        })
+      } catch (fetchErr) {
+        console.error('[api-submit] CRM fetch failed:', fetchErr.message)
+        return errorResponse(502, 'CRM unreachable')
+      }
       const resultData = await result.json()
 
       if (!result.ok) return errorResponse(result.status, resultData.error || 'Failed')
