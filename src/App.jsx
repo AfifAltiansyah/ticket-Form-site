@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import FormPage from './pages/FormPage'
 import CheckInPage from './pages/CheckInPage'
+import QRPage from './pages/QRPage'
 
 export default function App() {
   const [mode, setMode] = useState('register')
 
   useEffect(() => {
     function update() {
-      setMode(window.location.pathname === '/checkin' ? 'checkin' : 'register')
+      const path = window.location.pathname
+      if (path === '/checkin') setMode('checkin')
+      else if (path === '/qr') setMode('qr')
+      else setMode('register')
     }
     update()
     window.addEventListener('popstate', update)
@@ -22,7 +26,7 @@ export default function App() {
         </nav>
       </header>
       <main className="flex-1">
-        {mode === 'register' ? <FormPage /> : <CheckInPage />}
+        {mode === 'checkin' ? <CheckInPage /> : mode === 'qr' ? <QRPage /> : <FormPage />}
       </main>
     </div>
   )
