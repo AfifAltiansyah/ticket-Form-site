@@ -4,6 +4,37 @@ function formatPrice(n) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 }
 
+function compressAndEncode(file) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX_W = 1024
+      const MAX_H = 1024
+      let { width, height } = img
+      if (width > MAX_W || height > MAX_H) {
+        const ratio = Math.min(MAX_W / width, MAX_H / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/jpeg', 0.6))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.readAsDataURL(file)
+    }
+    img.src = url
+  })
+}
+
 export default function FormPage() {
   const [tickets, setTickets] = useState([])
   const [paymentOptions, setPaymentOptions] = useState([])
@@ -71,17 +102,15 @@ export default function FormPage() {
     }
     try {
       let proofBase64 = null
+      let proofFileName = null
       if (form.proof) {
-        proofBase64 = await new Promise((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result)
-          reader.readAsDataURL(form.proof)
-        })
+        proofBase64 = await compressAndEncode(form.proof)
+        proofFileName = form.proof.name
       }
       const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, proof: proofBase64, proof_name: form.proof?.name }),
+        body: JSON.stringify({ ...form, proof: proofBase64, proof_name: proofFileName }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong') }
