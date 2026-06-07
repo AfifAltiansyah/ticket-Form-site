@@ -281,7 +281,7 @@ export default function FormPage() {
             </div>
             <button type="submit" disabled={submitting}
               className="w-full py-3.5 bg-accent-600 text-white rounded-btn text-[15px] font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 mt-1">
-              {submitting ? 'Processing...' : 'Submit Registration'}
+              {submitting ? 'Processing...' : 'Checkout'}
             </button>
           </form>
         </div>
