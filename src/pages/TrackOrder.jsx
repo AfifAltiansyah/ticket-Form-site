@@ -396,7 +396,7 @@ export default function TrackOrder() {
                     type="button"
                     onClick={() => {
                       const order = orders.find(o => o.transaction_id === proofModal)
-                      const msg = `Hi, here is my proof of transfer for transaction ${proofModal} - ${order?.tickets?.title || ''}`
+                      const msg = `Hi ACODERA, Ini Bukti Transferku Dengan Transaction ID ${proofModal} - ${order?.tickets?.title || ''}`
                       window.open(`https://wa.me/6281934138145?text=${encodeURIComponent(msg)}`, '_blank')
                     }}
                     className="w-full py-2.5 bg-green-600 text-white rounded-btn text-xs font-semibold hover:bg-green-500 active:scale-[0.98] transition-all flex items-center justify-center gap-2"

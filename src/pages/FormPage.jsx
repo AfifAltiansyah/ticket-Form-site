@@ -158,7 +158,8 @@ export default function FormPage() {
 
   function handleWhatsAppProof() {
     if (!result) return
-    const msg = `Hi, here is my proof of transfer for transaction ${result.transaction_id} - ${result.ticket}`
+    const txnId = result.transaction_id || result.id || ''
+    const msg = `Hi ACODERA, Ini Bukti Transferku Dengan Transaction ID ${txnId} - ${result.ticket || ''}`
     window.open(`https://wa.me/6281934138145?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
@@ -211,7 +212,8 @@ export default function FormPage() {
 
   if (result) {
     const proofDone = proofStatus === 'sent_site' || proofStatus === 'sent_whatsapp'
-    const whatsappMsg = `Hi, here is my proof of transfer for transaction ${result.transaction_id} - ${result.ticket}`
+    const txnId = result.transaction_id || result.id || ''
+    const whatsappMsg = `Hi ACODERA, Ini Bukti Transferku Dengan Transaction ID ${txnId} - ${result.ticket || ''}`
 
     return (
       <div className="min-h-screen bg-surface-base flex items-center justify-center px-4 py-10">
