@@ -55,8 +55,8 @@ export default function App() {
         {mode === 'checkin' ? <CheckInPage /> :
          mode === 'qr' ? <QRPage /> :
          mode === 'track' ? <TrackOrder /> :
-         mode === 'login' ? <LoginPage onLogin={() => navigate('/track')} /> :
-         mode === 'register' ? <RegisterPage onRegister={() => navigate('/track')} /> :
+         mode === 'login' ? <LoginPage onLogin={() => navigate('/')} /> :
+         mode === 'register' ? <RegisterPage onRegister={() => navigate('/')} /> :
          <FormPage />}
       </main>
     </div>
