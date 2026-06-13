@@ -100,7 +100,10 @@ export default function TrackOrder() {
   }
 
   async function handleProofSubmit(transactionId) {
-    if (!proofFile) return
+    if (!proofFile || !transactionId) {
+      setProofError('Missing file or transaction ID.')
+      return
+    }
     setProofStatus('uploading')
     setProofError('')
     try {
@@ -122,6 +125,10 @@ export default function TrackOrder() {
   }
 
   async function handleWhatsAppConfirm(transactionId) {
+    if (!transactionId) {
+      setProofError('Transaction ID is missing.')
+      return
+    }
     setProofStatus('uploading')
     setProofError('')
     try {
