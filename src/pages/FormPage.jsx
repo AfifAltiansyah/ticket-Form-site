@@ -151,11 +151,12 @@ export default function FormPage() {
     setProofStatus('uploading')
     setProofError('')
     try {
+      const txnId = result.transaction_id || result.id
       const proofBase64 = await compressAndEncode(proofFile)
       const res = await fetch('/api/upload-proof', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction_id: result.transaction_id, proof: proofBase64, proof_name: proofFile.name }),
+        body: JSON.stringify({ transaction_id: txnId, proof: proofBase64, proof_name: proofFile.name }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
@@ -178,7 +179,8 @@ export default function FormPage() {
     setProofStatus('uploading')
     setProofError('')
     try {
-      const res = await fetch(`/api/external/transactions/${result.transaction_id}`, {
+      const txnId = result.transaction_id || result.id
+      const res = await fetch(`/api/external/transactions/${txnId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ metadata: { notes: 'Proof sent via WhatsApp' } }),

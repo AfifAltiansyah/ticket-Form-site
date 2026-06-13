@@ -102,7 +102,7 @@ exports.handler = async (event) => {
           success: true,
           transaction: {
             id: resultData.data.id,
-            transaction_id: resultData.data.transaction_id,
+            transaction_id: resultData.data.transaction_id || resultData.data.id,
             ticket: ticket.title,
             buyer_name: name,
             total_amount: total,
