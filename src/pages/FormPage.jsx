@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { formatPrice, compressAndEncode } from '../utils'
 import { isLoggedIn, getUser, getAuthHeaders } from '../api/auth'
+import { useRealtimeRefresh } from '../hooks/useSupabaseRealtime'
 
 function slugify(str) {
   return str
@@ -67,6 +68,17 @@ export default function FormPage() {
     }
     fetchData()
   }, [])
+
+  // Real-time: refresh tickets when transactions change (ticket purchases from other users)
+  useRealtimeRefresh('transactions', async () => {
+    try {
+      const ticketsRes = await fetch('/api/external/tickets')
+      if (ticketsRes.ok) {
+        const ticketsJson = await ticketsRes.json()
+        setTickets(ticketsJson.data || [])
+      }
+    } catch { /* silent */ }
+  })
 
   function updateField(field) {
     return (e) => {

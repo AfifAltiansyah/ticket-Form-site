@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { lookupOrders, submitProof } from '../api/crm'
 import { getUser, isLoggedIn } from '../api/auth'
+import { useRealtimeRefresh } from '../hooks/useSupabaseRealtime'
 
 function formatPrice(n) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
@@ -79,6 +80,9 @@ export default function TrackOrder() {
     }
     loadOrders()
   }, [])
+
+  // Real-time: refresh orders when transactions change (status updates, proof uploads)
+  useRealtimeRefresh('transactions', loadOrders)
 
   async function loadOrders() {
     if (!user?.email) return
