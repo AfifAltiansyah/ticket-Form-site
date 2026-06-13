@@ -6,6 +6,11 @@
   NODE_VERSION = "18"
 
 [[redirects]]
+  from = "/api/upload-proof"
+  to = "/.netlify/functions/upload-proof"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200

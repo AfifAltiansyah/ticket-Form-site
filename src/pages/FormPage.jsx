@@ -152,10 +152,10 @@ export default function FormPage() {
     setProofError('')
     try {
       const proofBase64 = await compressAndEncode(proofFile)
-      const res = await fetch(`/api/external/transactions/${result.transaction_id}`, {
-        method: 'PATCH',
+      const res = await fetch('/api/upload-proof', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metadata: { proof_url: proofBase64, proof_name: proofFile.name } }),
+        body: JSON.stringify({ transaction_id: result.transaction_id, proof: proofBase64, proof_name: proofFile.name }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
