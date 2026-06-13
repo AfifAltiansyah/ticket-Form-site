@@ -1,23 +1,67 @@
 import { useState } from 'react'
-import { formatPrice, compressAndEncode } from '../utils'
-import { lookupOrders, uploadProof, submitProof } from '../api/crm'
+import { lookupOrders, submitProof } from '../api/crm'
 
-const WHATSAPP_NUMBER = '6281934138145'
-const STATUS_FILTERS = ['All', 'Pending', 'Paid', 'Checked In']
-
-function statusStyle(status) {
-  const s = (status || '').toLowerCase()
-  if (s === 'paid' || s === 'confirmed') return 'bg-green-500/10 text-green-400'
-  if (s === 'checked_in' || s === 'checked in') return 'bg-blue-500/10 text-blue-400'
-  if (s === 'cancelled' || s === 'canceled') return 'bg-red-500/10 text-red-400'
-  return 'bg-amber-400/10 text-amber-400'
+function formatPrice(n) {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 }
 
-function proofStatus(t) {
-  const meta = t.metadata || {}
-  if (meta.proof_url) return { label: 'Proof uploaded', color: 'text-green-400' }
-  if (meta.notes && meta.notes.toLowerCase().includes('whatsapp')) return { label: 'Sent via WhatsApp', color: 'text-green-400' }
-  return { label: 'No proof submitted', color: 'text-amber-400' }
+function formatDate(dt) {
+  if (!dt) return '—'
+  return new Date(dt).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function formatTime(dt) {
+  if (!dt) return ''
+  return new Date(dt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
+
+const STATUS_STYLES = {
+  paid: 'bg-green-500/10 text-green-400 border-green-500/20',
+  pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  checked_in: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
+  available: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+}
+
+function StatusBadge({ status }) {
+  const style = STATUS_STYLES[status] || STATUS_STYLES.pending
+  const label = status === 'checked_in' ? 'Checked In' : status.charAt(0).toUpperCase() + status.slice(1)
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${style}`}>
+      {label}
+    </span>
+  )
+}
+
+function compressAndEncode(file) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX_W = 1024
+      const MAX_H = 1024
+      let { width, height } = img
+      if (width > MAX_W || height > MAX_H) {
+        const ratio = Math.min(MAX_W / width, MAX_H / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/jpeg', 0.6))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.readAsDataURL(file)
+    }
+    img.src = url
+  })
 }
 
 export default function TrackOrder() {
@@ -26,324 +70,382 @@ export default function TrackOrder() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [searched, setSearched] = useState(false)
-  const [filter, setFilter] = useState('All')
-  const [expanded, setExpanded] = useState(null)
-
+  const [expandedId, setExpandedId] = useState(null)
+  const [proofModal, setProofModal] = useState(null)
   const [proofFile, setProofFile] = useState(null)
-  const [proofTarget, setProofTarget] = useState(null)
-  const [proofLoading, setProofLoading] = useState(false)
+  const [proofStatus, setProofStatus] = useState('pending')
   const [proofError, setProofError] = useState('')
-
-  const filtered = filter === 'All' ? orders : orders.filter((t) => {
-    const s = (t.status || '').toLowerCase()
-    if (filter === 'Pending') return s === 'pending'
-    if (filter === 'Paid') return s === 'paid' || s === 'confirmed'
-    if (filter === 'Checked In') return s === 'checked_in' || s === 'checked in'
-    return true
-  })
 
   async function handleSearch(e) {
     e.preventDefault()
     if (!email.trim()) return
     setLoading(true)
     setError('')
+    setOrders([])
     setSearched(true)
-    setExpanded(null)
-    setProofTarget(null)
+    setExpandedId(null)
+
     try {
-      const data = await lookupOrders(email.trim())
-      setOrders(data.data || [])
+      const res = await lookupOrders(email.trim())
+      const data = res.data || []
+      // Filter out 'available' status (unassigned tickets)
+      const filtered = data.filter(o => o.status !== 'available')
+      setOrders(filtered)
+      if (filtered.length === 0) {
+        setError('No orders found for this email address.')
+      }
     } catch (err) {
-      setError(err.message)
-      setOrders([])
+      setError(err.message || 'Failed to look up orders. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  function handleExpand(id) {
-    setExpanded(expanded === id ? null : id)
-    setProofTarget(null)
-    setProofFile(null)
-    setProofError('')
-  }
-
-  function startProof(order) {
-    setProofTarget(order)
-    setProofFile(null)
-    setProofError('')
-  }
-
-  async function handleUploadProof() {
-    if (!proofFile || !proofTarget) return
-    setProofLoading(true)
+  async function handleProofSubmit(transactionId) {
+    if (!proofFile) return
+    setProofStatus('uploading')
     setProofError('')
     try {
-      const txnId = proofTarget.transaction_id || proofTarget.id
-      const base64 = await compressAndEncode(proofFile)
-      await uploadProof(txnId, base64, proofFile.name)
-      setOrders((prev) => prev.map((o) =>
-        o.id === proofTarget.id
-          ? { ...o, metadata: { ...o.metadata, proof_url: 'uploaded', proof_name: proofFile.name } }
-          : o
-      ))
-      setProofTarget(null)
+      const proofBase64 = await compressAndEncode(proofFile)
+      const res = await fetch('/api/upload-proof', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction_id: transactionId, proof: proofBase64, proof_name: proofFile.name }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      setProofStatus('sent')
       setProofFile(null)
+      // Refresh orders to show updated metadata
+      const refreshed = await lookupOrders(email.trim())
+      setOrders((refreshed.data || []).filter(o => o.status !== 'available'))
     } catch (err) {
-      setProofError(err.message)
-    } finally {
-      setProofLoading(false)
+      setProofError(err.message || 'Upload failed. Please try again.')
+      setProofStatus('pending')
     }
   }
 
-  function handleWhatsApp(order) {
-    const txnId = order.transaction_id || order.id
-    const ticketName = order.tickets?.title || order.ticket || ''
-    const msg = `Hi, here is my proof of transfer for transaction ${txnId} - ${ticketName}`
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank')
-  }
-
-  async function handleConfirmWhatsApp(order) {
-    setProofLoading(true)
+  async function handleWhatsAppConfirm(transactionId) {
+    setProofStatus('uploading')
     setProofError('')
     try {
-      const txnId = order.transaction_id || order.id
-      await submitProof(txnId, { notes: 'Proof sent via WhatsApp' })
-      setOrders((prev) => prev.map((o) =>
-        o.id === order.id
-          ? { ...o, metadata: { ...o.metadata, notes: 'Proof sent via WhatsApp' } }
-          : o
-      ))
-      setProofTarget(null)
+      await submitProof(transactionId, { notes: 'Proof sent via WhatsApp' })
+      setProofStatus('sent')
+      // Refresh orders
+      const refreshed = await lookupOrders(email.trim())
+      setOrders((refreshed.data || []).filter(o => o.status !== 'available'))
     } catch (err) {
-      setProofError(err.message)
-    } finally {
-      setProofLoading(false)
+      setProofError(err.message || 'Failed to confirm. Please try again.')
+      setProofStatus('pending')
     }
   }
+
+  function openProofModal(transactionId) {
+    setProofModal(transactionId)
+    setProofFile(null)
+    setProofStatus('pending')
+    setProofError('')
+  }
+
+  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
 
   return (
     <div className="min-h-screen bg-surface-base flex flex-col items-center px-4 py-10 lg:py-16">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-lg">
+        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-[28px] lg:text-[32px] font-bold text-text-primary">Track My Order</h1>
-          <p className="text-sm text-text-muted mt-1">Enter your email to view your orders and submit proof of transfer.</p>
+          <div className="w-14 h-14 bg-accent-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </div>
+          <h1 className="text-[28px] font-bold text-text-primary">Track My Order</h1>
+          <p className="text-sm text-text-muted mt-1">Enter your email to view your registrations and submit proof of payment.</p>
         </div>
 
+        {/* Search Form */}
         <form onSubmit={handleSearch} className="flex gap-2 mb-6">
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            className="flex-1 px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all"
+            placeholder="Enter your email address"
+            className={inputClass}
+            autoFocus
           />
           <button
             type="submit"
-            disabled={loading}
-            className="px-6 py-3 bg-accent-600 text-white rounded-btn text-[15px] font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30"
+            disabled={loading || !email.trim()}
+            className="px-6 py-3 bg-accent-600 text-white rounded-btn text-sm font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 shrink-0"
           >
-            {loading ? 'Searching...' : 'Search'}
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              'Search'
+            )}
           </button>
         </form>
 
+        {/* Error */}
         {error && (
-          <div className="mb-5 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-btn text-sm">{error}</div>
-        )}
-
-        {searched && !loading && orders.length === 0 && !error && (
-          <div className="text-center py-12">
-            <p className="text-text-secondary font-medium mb-1">No orders found</p>
-            <p className="text-sm text-text-dim">No transactions found for this email address.</p>
+          <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-btn text-sm text-center">
+            {error}
           </div>
         )}
 
-        {orders.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex gap-1 bg-surface-card rounded-btn p-1 border border-surface-border">
-              {STATUS_FILTERS.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => { setFilter(f); setExpanded(null); setProofTarget(null) }}
-                  className={`flex-1 py-2 rounded-[10px] text-xs font-medium transition-all ${
-                    filter === f ? 'bg-accent-600 text-white' : 'text-text-secondary hover:text-text-primary'
-                  }`}
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-[3px] border-accent-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Order List */}
+        {!loading && orders.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-xs text-text-dim mb-2">{orders.length} order{orders.length > 1 ? 's' : ''} found</p>
+            {orders.map((order) => {
+              const isExpanded = expandedId === order.id
+              const ticket = order.tickets || {}
+              const hasProof = order.metadata?.proof_url || order.metadata?.notes
+
+              return (
+                <div
+                  key={order.id}
+                  className="bg-surface-elevated rounded-card border border-surface-border overflow-hidden"
                 >
-                  {f}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-xs text-text-dim">{filtered.length} order{filtered.length !== 1 ? 's' : ''} found</p>
-
-            <div className="space-y-3">
-              {filtered.map((order) => {
-                const ticket = order.tickets || {}
-                const isExpanded = expanded === order.id
-                const proof = proofStatus(order)
-                const showProofForm = proofTarget?.id === order.id
-
-                return (
-                  <div key={order.id} className="bg-surface-elevated rounded-card border border-surface-border overflow-hidden">
-                    <button
-                      onClick={() => handleExpand(order.id)}
-                      className="w-full text-left p-5 hover:bg-surface-hover transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-base font-semibold text-text-primary truncate">
-                            {ticket.title || order.ticket || 'Event'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-text-muted">
-                            {ticket.date_time && (
-                              <span>{new Date(ticket.date_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                            )}
-                            {ticket.location && (
-                              <>
-                                <span>&middot;</span>
-                                <span className="truncate">{ticket.location}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium ${statusStyle(order.status)}`}>
-                            {order.status || 'pending'}
+                  {/* Card Header */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {ticket.abbreviation && (
+                          <span className="text-xs font-semibold tracking-widest uppercase text-accent-400 bg-accent-500/10 px-2 py-0.5 rounded-full shrink-0">
+                            {ticket.abbreviation}
                           </span>
-                          <p className="text-sm font-bold text-text-primary mt-1">{formatPrice(order.total_amount)}</p>
-                        </div>
-                      </div>
-                      <svg
-                        className={`w-4 h-4 text-text-dim mt-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="px-5 pb-5 border-t border-surface-border pt-4 space-y-4 animate-[fadeIn_0.2s_ease-out]">
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-text-dim text-xs mb-0.5">Transaction ID</p>
-                            <p className="text-text-secondary font-mono text-xs">{order.transaction_id}</p>
-                          </div>
-                          <div>
-                            <p className="text-text-dim text-xs mb-0.5">Quantity</p>
-                            <p className="text-text-secondary">{order.quantity || 1}</p>
-                          </div>
-                          <div>
-                            <p className="text-text-dim text-xs mb-0.5">Buyer</p>
-                            <p className="text-text-secondary">{order.buyer_name}</p>
-                          </div>
-                          <div>
-                            <p className="text-text-dim text-xs mb-0.5">Payment</p>
-                            <p className="text-text-secondary capitalize">{(order.payment_method || '').replace(/_/g, ' ')}</p>
-                          </div>
-                          <div>
-                            <p className="text-text-dim text-xs mb-0.5">Purchased</p>
-                            <p className="text-text-secondary">
-                              {order.purchased_at ? new Date(order.purchased_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-text-dim text-xs mb-0.5">Proof Status</p>
-                            <p className={`text-xs font-medium ${proof.color}`}>{proof.label}</p>
-                          </div>
-                        </div>
-
-                        {proof.label === 'No proof submitted' && (
-                          <div className="pt-2 border-t border-surface-border space-y-3">
-                            {proofError && (
-                              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-btn text-xs">{proofError}</div>
-                            )}
-
-                            {showProofForm ? (
-                              <div className="space-y-3">
-                                <div className="space-y-2">
-                                  <p className="text-xs font-medium text-text-secondary">Upload proof</p>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => setProofFile(e.target.files[0] || null)}
-                                    className="block w-full text-xs text-text-muted file:mr-3 file:py-2 file:px-4 file:rounded-btn file:border-0 file:text-xs file:font-medium file:bg-accent-600 file:text-white hover:file:bg-accent-500 file:cursor-pointer"
-                                  />
-                                  {proofFile && (
-                                    <div className="flex items-start gap-3 bg-surface-card rounded-btn p-3 border border-surface-border">
-                                      <img src={URL.createObjectURL(proofFile)} alt="Preview" className="w-10 h-10 rounded object-cover shrink-0" />
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs text-text-primary truncate">{proofFile.name}</p>
-                                        <p className="text-[11px] text-text-dim">{(proofFile.size / 1024).toFixed(0)} KB</p>
-                                      </div>
-                                      <button type="button" onClick={() => setProofFile(null)} className="p-1 text-text-dim hover:text-red-400 transition-colors shrink-0">
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                      </button>
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    disabled={!proofFile || proofLoading}
-                                    onClick={handleUploadProof}
-                                    className="w-full py-2.5 bg-accent-600 text-white rounded-btn text-xs font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                  >
-                                    {proofLoading ? 'Uploading...' : 'Submit Proof'}
-                                  </button>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                  <div className="flex-1 h-px bg-surface-border" />
-                                  <span className="text-[11px] text-text-dim">or</span>
-                                  <div className="flex-1 h-px bg-surface-border" />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleWhatsApp(order)}
-                                    className="w-full py-2.5 bg-green-600 text-white rounded-btn text-xs font-semibold hover:bg-green-500 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                                  >
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
-                                    Send via WhatsApp
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={proofLoading}
-                                    onClick={() => handleConfirmWhatsApp(order)}
-                                    className="w-full py-2.5 bg-surface-card border border-surface-border text-text-secondary rounded-btn text-xs font-medium hover:bg-surface-hover active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                  >
-                                    {proofLoading ? 'Confirming...' : "I've sent it via WhatsApp"}
-                                  </button>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setProofTarget(null)}
-                                  className="w-full py-2 text-xs text-text-dim hover:text-text-secondary transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => startProof(order)}
-                                className="w-full py-2.5 bg-accent-600 text-white rounded-btn text-xs font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all"
-                              >
-                                Submit Proof of Transfer
-                              </button>
-                            )}
-                          </div>
                         )}
+                        <StatusBadge status={order.status} />
+                      </div>
+                      <span className="text-sm font-bold text-text-primary shrink-0">{formatPrice(order.total_amount)}</span>
+                    </div>
+
+                    <h3 className="text-[15px] font-semibold text-text-primary mb-1 truncate">
+                      {ticket.title || 'Event Ticket'}
+                    </h3>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+                      {ticket.date_time && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {formatDate(ticket.date_time)}
+                        </span>
+                      )}
+                      {ticket.location && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {ticket.location}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Proof indicator */}
+                    {hasProof && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-green-400">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Proof submitted</span>
                       </div>
                     )}
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                        className="flex-1 py-2 px-3 bg-surface-card border border-surface-border text-text-secondary rounded-btn text-xs font-medium hover:bg-surface-hover active:scale-[0.98] transition-all"
+                      >
+                        {isExpanded ? 'Hide Details' : 'View Details'}
+                      </button>
+                      {!hasProof && order.status !== 'cancelled' && (
+                        <button
+                          onClick={() => openProofModal(order.transaction_id)}
+                          className="flex-1 py-2 px-3 bg-accent-600 text-white rounded-btn text-xs font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all"
+                        >
+                          Submit Proof
+                        </button>
+                      )}
+                    </div>
                   </div>
-                )
-              })}
-            </div>
+
+                  {/* Expanded Details */}
+                  {isExpanded && (
+                    <div className="border-t border-surface-border px-5 py-4 bg-surface-card/50 space-y-2.5 text-sm">
+                      {[
+                        ['Transaction ID', order.transaction_id, true],
+                        ['Buyer Name', order.buyer_name],
+                        ['Email', order.buyer_email],
+                        ['Phone', order.buyer_phone || '—'],
+                        ['Quantity', order.quantity || 1],
+                        ['Payment', (order.payment_method || '—').replace(/_/g, ' ')],
+                      ].map(([label, value, mono]) => (
+                        <div key={label} className="flex justify-between items-center">
+                          <span className="text-text-muted text-xs">{label}</span>
+                          <span className={`text-text-secondary text-xs ${mono ? 'font-mono' : ''}`}>{value}</span>
+                        </div>
+                      ))}
+                      {ticket.price && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-text-muted text-xs">Price per ticket</span>
+                          <span className="text-text-secondary text-xs">{formatPrice(ticket.price)}</span>
+                        </div>
+                      )}
+                      {order.metadata?.proof_url && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-text-muted text-xs">Proof</span>
+                          <a href={order.metadata.proof_url} target="_blank" rel="noopener noreferrer" className="text-accent-400 text-xs underline truncate max-w-[200px]">View Image</a>
+                        </div>
+                      )}
+                      {order.metadata?.notes && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-text-muted text-xs">Notes</span>
+                          <span className="text-text-secondary text-xs">{order.metadata.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
+
+        {/* Empty state after search */}
+        {!loading && searched && orders.length === 0 && !error && (
+          <div className="text-center py-12">
+            <div className="w-14 h-14 bg-surface-card rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-text-secondary text-sm font-medium">No orders found</p>
+            <p className="text-text-dim text-xs mt-1">Try a different email address</p>
+          </div>
+        )}
+
+        {/* Back link */}
+        <div className="text-center mt-8">
+          <a href="/" className="text-xs text-text-muted hover:text-accent-400 transition-colors">
+            ← Back to Registration
+          </a>
+        </div>
       </div>
+
+      {/* Proof Upload Modal */}
+      {proofModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-[fadeIn_0.15s_ease-out]"
+          onClick={() => setProofModal(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-surface-elevated rounded-card border border-surface-border p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-text-primary">Submit Proof of Payment</h3>
+              <button onClick={() => setProofModal(null)} className="p-1 text-text-dim hover:text-text-primary transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {proofStatus === 'sent' ? (
+              <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-btn p-4">
+                <svg className="w-5 h-5 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-green-400">Proof submitted successfully</p>
+                  <p className="text-xs text-green-400/60 mt-0.5">Your order will be verified shortly.</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {proofError && (
+                  <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-btn text-xs">{proofError}</div>
+                )}
+
+                {/* Option 1: Upload */}
+                <div className="space-y-2.5">
+                  <p className="text-xs font-medium text-text-secondary">Option 1: Upload here</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setProofFile(e.target.files[0] || null)}
+                    className="block w-full text-xs text-text-muted file:mr-3 file:py-2 file:px-4 file:rounded-btn file:border-0 file:text-xs file:font-medium file:bg-accent-600 file:text-white hover:file:bg-accent-500 file:cursor-pointer file:transition-colors"
+                  />
+                  {proofFile && (
+                    <div className="flex items-center gap-2 text-xs text-text-secondary">
+                      <img src={URL.createObjectURL(proofFile)} alt="Preview" className="w-8 h-8 rounded object-cover" />
+                      <span className="truncate flex-1">{proofFile.name}</span>
+                      <button onClick={() => setProofFile(null)} className="text-text-dim hover:text-red-400 transition-colors">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!proofFile || proofStatus === 'uploading'}
+                    onClick={() => handleProofSubmit(proofModal)}
+                    className="w-full py-2.5 bg-accent-600 text-white rounded-btn text-xs font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100"
+                  >
+                    {proofStatus === 'uploading' ? 'Uploading...' : 'Submit Proof'}
+                  </button>
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-surface-border" />
+                  <span className="text-[11px] text-text-dim">or</span>
+                  <div className="flex-1 h-px bg-surface-border" />
+                </div>
+
+                {/* Option 2: WhatsApp */}
+                <div className="space-y-2.5">
+                  <p className="text-xs font-medium text-text-secondary">Option 2: Send via WhatsApp</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const order = orders.find(o => o.transaction_id === proofModal)
+                      const msg = `Hi, here is my proof of transfer for transaction ${proofModal} - ${order?.tickets?.title || ''}`
+                      window.open(`https://wa.me/6281934138145?text=${encodeURIComponent(msg)}`, '_blank')
+                    }}
+                    className="w-full py-2.5 bg-green-600 text-white rounded-btn text-xs font-semibold hover:bg-green-500 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                    Send via WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    disabled={proofStatus === 'uploading'}
+                    onClick={() => handleWhatsAppConfirm(proofModal)}
+                    className="w-full py-2.5 bg-surface-card border border-surface-border text-text-secondary rounded-btn text-xs font-medium hover:bg-surface-hover active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100"
+                  >
+                    {proofStatus === 'uploading' ? 'Confirming...' : "I've sent it via WhatsApp"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
