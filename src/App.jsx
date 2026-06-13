@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import FormPage from './pages/FormPage'
 import CheckInPage from './pages/CheckInPage'
 import QRPage from './pages/QRPage'
+import TrackOrder from './pages/TrackOrder'
 
 export default function App() {
   const [mode, setMode] = useState('register')
@@ -11,6 +12,7 @@ export default function App() {
       const path = window.location.pathname
       if (path === '/checkin') setMode('checkin')
       else if (path === '/qr') setMode('qr')
+      else if (path === '/track') setMode('track')
       else setMode('register')
     }
     update()
@@ -26,7 +28,7 @@ export default function App() {
         </nav>
       </header>
       <main className="flex-1">
-        {mode === 'checkin' ? <CheckInPage /> : mode === 'qr' ? <QRPage /> : <FormPage />}
+        {mode === 'checkin' ? <CheckInPage /> : mode === 'qr' ? <QRPage /> : mode === 'track' ? <TrackOrder /> : <FormPage />}
       </main>
     </div>
   )
