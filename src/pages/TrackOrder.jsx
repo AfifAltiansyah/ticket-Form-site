@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { lookupOrders, submitProof } from '../api/crm'
-import { getUser } from '../api/auth'
+import { getUser, isLoggedIn } from '../api/auth'
 
 function formatPrice(n) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
