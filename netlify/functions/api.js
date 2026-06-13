@@ -4,7 +4,7 @@ const CRM_API_KEY = process.env.CRM_API_KEY || ''
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, X-Api-Key',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
 }
 
 function errorResponse(status, message) {
@@ -35,9 +35,9 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || '{}') } catch {}
 
   try {
-    // POST /api/submit — enhanced transaction creation
+    // POST /api/submit — transaction creation (no proof)
     if (method === 'POST' && path === '/submit') {
-      const { name, email, phone, ticket_id, quantity, payment_method, drink, proof, proof_name } = body
+      const { name, email, phone, ticket_id, quantity, payment_method, drink } = body
 
       if (!name || !email || !ticket_id || !payment_method) {
         return errorResponse(400, 'Name, email, ticket, and payment method are required')
@@ -71,15 +71,9 @@ exports.handler = async (event) => {
         purchased_at: new Date().toISOString(),
       }
       if (drink) payload.drink = drink
-      if (proof) {
-        console.log('[api-submit] proof size:', proof.length, 'chars')
-        payload.proof = proof
-        payload.proof_name = proof_name || ''
-      }
 
       console.log('[api-submit] sending to CRM, payload keys:', Object.keys(payload))
       let result
-      let proofWarning = null
       try {
         result = await fetch(`${CRM_API_URL}/external/transactions`, {
           method: 'POST',
@@ -91,25 +85,6 @@ exports.handler = async (event) => {
         return errorResponse(502, 'CRM unreachable')
       }
 
-      // If proof caused an error, retry without it
-      if (!result.ok && proof) {
-        console.log('[api-submit] Retrying without proof...')
-        proofWarning = 'Proof could not be saved'
-        delete payload.proof
-        delete payload.proof_name
-        try {
-          result = await fetch(`${CRM_API_URL}/external/transactions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY },
-            body: JSON.stringify(payload),
-          })
-        } catch (fetchErr) {
-          console.error('[api-submit] CRM retry failed:', fetchErr.message)
-          return errorResponse(502, 'CRM unreachable')
-        }
-      }
-
-      // Try to parse the response
       let resultData
       try {
         resultData = await result.json()
@@ -125,7 +100,6 @@ exports.handler = async (event) => {
         headers: cors,
         body: JSON.stringify({
           success: true,
-          warning: proofWarning || undefined,
           transaction: {
             id: resultData.data.id,
             transaction_id: resultData.data.transaction_id,
@@ -136,6 +110,53 @@ exports.handler = async (event) => {
             status: 'pending',
           },
         }),
+      }
+    }
+
+    // POST /api/submit-proof — attach proof to existing transaction
+    if (method === 'POST' && path === '/submit-proof') {
+      const { transaction_id, proof, proof_name } = body
+      if (!transaction_id || !proof) return errorResponse(400, 'Transaction ID and proof are required')
+
+      console.log('[api-submit-proof] attaching proof to', transaction_id)
+      try {
+        const res = await fetch(`${CRM_API_URL}/external/transactions/${transaction_id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY },
+          body: JSON.stringify({ proof, proof_name: proof_name || '' }),
+        })
+        if (res.ok) {
+          return { statusCode: 200, headers: cors, body: JSON.stringify({ success: true }) }
+        }
+        const data = await res.json().catch(() => ({}))
+        console.log('[api-submit-proof] CRM PATCH failed:', res.status, data)
+        return errorResponse(res.status, data.error || 'Failed to save proof')
+      } catch (fetchErr) {
+        console.error('[api-submit-proof] CRM error:', fetchErr.message)
+        return errorResponse(502, 'CRM unreachable')
+      }
+    }
+
+    // POST /api/mark-whatsapp-proof — mark transaction as proof sent via WhatsApp
+    if (method === 'POST' && path === '/mark-whatsapp-proof') {
+      const { transaction_id } = body
+      if (!transaction_id) return errorResponse(400, 'Transaction ID is required')
+
+      console.log('[api-mark-whatsapp-proof] marking', transaction_id)
+      try {
+        const res = await fetch(`${CRM_API_URL}/external/transactions/${transaction_id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY },
+          body: JSON.stringify({ notes: 'Proof sent via WhatsApp' }),
+        })
+        if (res.ok) {
+          return { statusCode: 200, headers: cors, body: JSON.stringify({ success: true }) }
+        }
+        console.log('[api-mark-whatsapp-proof] CRM PATCH returned:', res.status)
+        return { statusCode: 200, headers: cors, body: JSON.stringify({ success: true, warning: 'Could not update CRM' }) }
+      } catch (fetchErr) {
+        console.error('[api-mark-whatsapp-proof] CRM error:', fetchErr.message)
+        return { statusCode: 200, headers: cors, body: JSON.stringify({ success: true, warning: 'Could not update CRM' }) }
       }
     }
 
