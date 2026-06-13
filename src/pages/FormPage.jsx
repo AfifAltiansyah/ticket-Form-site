@@ -361,7 +361,7 @@ export default function FormPage() {
             </div>
             <div>
               <label className={labelClass}>Phone</label>
-              <input type="tel" value={form.phone} onChange={updateField('phone')} placeholder="+62..." className={inputClass} />
+              <input type="tel" value={form.phone} onChange={updateField('phone')} placeholder="Phone" className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>Event *</label>
@@ -376,7 +376,22 @@ export default function FormPage() {
               <div>
                 <label className={labelClass}>Quantity</label>
                 <input type="number" min="1" value={form.quantity}
-                  onChange={(e) => { const v = Math.max(1, parseInt(e.target.value) || 1); setForm((p) => ({ ...p, quantity: v })) }}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === '') {
+                      setForm((p) => ({ ...p, quantity: '' }))
+                    } else {
+                      const num = parseInt(val)
+                      if (!isNaN(num) && num >= 1) {
+                        setForm((p) => ({ ...p, quantity: num }))
+                      }
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!form.quantity || form.quantity < 1) {
+                      setForm((p) => ({ ...p, quantity: 1 }))
+                    }
+                  }}
                   className={`${inputClass} ${form.quantity > stock ? '!border-red-500/50 !ring-red-500/30' : ''}`} />
                 {form.quantity > stock && <p className="text-xs text-red-400 mt-1">Only {stock} available</p>}
               </div>
