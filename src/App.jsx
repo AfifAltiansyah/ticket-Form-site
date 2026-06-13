@@ -24,7 +24,8 @@ export default function App() {
     <div className="min-h-screen bg-surface-base flex flex-col">
       <header className="w-full bg-black px-4 lg:px-8">
         <nav className="max-w-[1440px] mx-auto h-11 flex items-center justify-between">
-          <span className="text-xs text-text-dim tracking-tight">Event Registration</span>
+          <a href="/" className="text-xs text-text-dim tracking-tight hover:text-text-muted transition-colors">Event Registration</a>
+          <a href="/track" className="text-xs text-accent-400 hover:text-accent-300 transition-colors">Track Order</a>
         </nav>
       </header>
       <main className="flex-1">
