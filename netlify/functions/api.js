@@ -155,7 +155,8 @@ exports.handler = async (event) => {
       const base64Data = match[2]
       const buffer = Buffer.from(base64Data, 'base64')
       const ext = contentType.split('/')[1] || 'jpg'
-      const fileName = proof_name || `proof.${ext}`
+      const safeName = (proof_name || `proof.${ext}`).replace(/[^a-zA-Z0-9._-]/g, '_')
+      const fileName = safeName
       const filePath = `${transaction_id}/${fileName}`
 
       console.log(`[upload-proof] uploading ${filePath} (${buffer.length} bytes, ${contentType})`)
