@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { formatPrice, compressAndEncode } from '../utils'
+import { isLoggedIn, getUser, getAuthHeaders } from '../api/auth'
 
 function slugify(str) {
   return str
@@ -114,14 +115,23 @@ export default function FormPage() {
 
   async function handleProofUpload() {
     if (!proofFile || !result) return
+    if (!isLoggedIn()) {
+      setProofError('Please sign in to submit proof.')
+      return
+    }
+    const txnId = result.transaction_id || result.id
+    if (!txnId) {
+      setProofError('Transaction ID is missing.')
+      return
+    }
     setProofStatus('uploading')
     setProofError('')
     try {
-      const txnId = result.transaction_id || result.id
       const proofBase64 = await compressAndEncode(proofFile)
+      console.log('[proof-upload] txnId:', txnId, 'proof length:', proofBase64?.length || 0)
       const res = await fetch('/api/upload-proof', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ transaction_id: txnId, proof: proofBase64, proof_name: proofFile.name }),
       })
       const data = await res.json()
@@ -142,13 +152,21 @@ export default function FormPage() {
 
   async function handleConfirmWhatsApp() {
     if (!result) return
+    if (!isLoggedIn()) {
+      setProofError('Please sign in to confirm.')
+      return
+    }
+    const txnId = result.transaction_id || result.id
+    if (!txnId) {
+      setProofError('Transaction ID is missing.')
+      return
+    }
     setProofStatus('uploading')
     setProofError('')
     try {
-      const txnId = result.transaction_id || result.id
       const res = await fetch(`/api/external/transactions/${txnId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ metadata: { notes: 'Proof sent via WhatsApp' } }),
       })
       const data = await res.json()

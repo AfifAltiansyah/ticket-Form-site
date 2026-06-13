@@ -130,6 +130,8 @@ exports.handler = async (event) => {
     if (method === 'POST' && path === '/upload-proof') {
       const { transaction_id, proof, proof_name } = body
 
+      console.log('[upload-proof] transaction_id:', transaction_id, 'proof length:', proof?.length || 0, 'proof_name:', proof_name)
+
       if (!transaction_id || !proof) {
         return errorResponse(400, 'Transaction ID and proof are required')
       }
@@ -139,7 +141,10 @@ exports.handler = async (event) => {
       }
 
       const match = proof.match(/^data:(image\/\w+);base64,(.+)$/)
-      if (!match) return errorResponse(400, 'Invalid proof format — expected base64 data URI')
+      if (!match) {
+        console.error('[upload-proof] Invalid proof format, first 100 chars:', proof.substring(0, 100))
+        return errorResponse(400, 'Invalid proof format — expected base64 data URI')
+      }
 
       const contentType = match[1]
       const base64Data = match[2]

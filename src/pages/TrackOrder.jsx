@@ -108,6 +108,7 @@ export default function TrackOrder() {
     setProofError('')
     try {
       const proofBase64 = await compressAndEncode(proofFile)
+      console.log('[track-upload] transactionId:', transactionId, 'proof length:', proofBase64?.length || 0)
       const res = await fetch('/api/upload-proof', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
