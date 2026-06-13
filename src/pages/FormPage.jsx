@@ -160,7 +160,7 @@ export default function FormPage() {
     if (!result) return
     const txnId = result.transaction_id || result.id || ''
     const msg = `Hi ACODERA, Ini Bukti Transferku Dengan Transaction ID ${txnId} - ${result.ticket || ''}`
-    window.open(`https://wa.me/6281934138145?text=${encodeURIComponent(msg)}`, '_blank')
+    window.open(`https://wa.me/6285719540188?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   async function handleConfirmWhatsApp() {
