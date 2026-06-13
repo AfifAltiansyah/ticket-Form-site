@@ -101,14 +101,19 @@ exports.handler = async (event) => {
 
       if (!result.ok) return errorResponse(result.status, resultData.error || 'Failed')
 
+      // CRM returns array when quantity > 1, single object when quantity = 1
+      const txn = Array.isArray(resultData.data) ? resultData.data[0] : resultData.data
+
+      console.log('[api-submit] CRM response, txn id:', txn?.id, 'transaction_id:', txn?.transaction_id)
+
       return {
         statusCode: 201,
         headers: cors,
         body: JSON.stringify({
           success: true,
           transaction: {
-            id: resultData.data.id,
-            transaction_id: resultData.data.transaction_id || resultData.data.id,
+            id: txn.id,
+            transaction_id: txn.transaction_id || txn.id,
             ticket: ticket.title,
             buyer_name: name,
             total_amount: total,
@@ -168,7 +173,9 @@ exports.handler = async (event) => {
       if (!uploadRes.ok) {
         const errText = await uploadRes.text().catch(() => '')
         console.error('[upload-proof] Storage upload failed:', uploadRes.status, errText)
-        return errorResponse(uploadRes.status, 'Failed to upload image to storage')
+        console.error('[upload-proof] Storage URL:', `${SUPABASE_URL}/storage/v1/object/proofs/${filePath}`)
+        console.error('[upload-proof] Content-Type:', contentType, 'Buffer length:', buffer.length)
+        return errorResponse(uploadRes.status, 'Failed to upload image to storage: ' + errText)
       }
 
       const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/proofs/${filePath}`
