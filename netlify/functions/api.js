@@ -11,9 +11,10 @@ function errorResponse(status, message) {
   return { statusCode: status, headers: cors, body: JSON.stringify({ error: message }) }
 }
 
-async function proxyToCrm(method, apiPath, body) {
+async function proxyToCrm(method, apiPath, body, authToken) {
   const url = CRM_API_URL + apiPath
   const headers = { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY }
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`
   const options = { method, headers }
   if (body && method !== 'GET') options.body = JSON.stringify(body)
 
@@ -33,6 +34,9 @@ exports.handler = async (event) => {
   const method = event.httpMethod
   let body = {}
   try { body = JSON.parse(event.body || '{}') } catch {}
+
+  // Extract auth token from frontend
+  const authToken = (event.headers.authorization || '').replace('Bearer ', '') || null
 
   try {
     // POST /api/submit — transaction creation (no proof)
@@ -117,11 +121,11 @@ exports.handler = async (event) => {
     if (method === 'POST' && path === '/checkin') {
       const { unique_code } = body
       if (!unique_code) return errorResponse(400, 'Unique code is required')
-      return proxyToCrm(method, '/external/checkin', body)
+      return proxyToCrm(method, '/external/checkin', body, authToken)
     }
 
     // All other requests — proxy directly to CRM
-    return proxyToCrm(method, path, body)
+    return proxyToCrm(method, path, body, authToken)
   } catch (err) {
     console.error('API proxy error:', err)
     return errorResponse(500, 'Internal error: ' + err.message)

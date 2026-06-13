@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { lookupOrders, submitProof } from '../api/crm'
+import { getUser, logout, isLoggedIn } from '../api/auth'
 
 function formatPrice(n) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
@@ -8,11 +9,6 @@ function formatPrice(n) {
 function formatDate(dt) {
   if (!dt) return '—'
   return new Date(dt).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-}
-
-function formatTime(dt) {
-  if (!dt) return ''
-  return new Date(dt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 }
 
 const STATUS_STYLES = {
@@ -65,40 +61,47 @@ function compressAndEncode(file) {
 }
 
 export default function TrackOrder() {
-  const [email, setEmail] = useState('')
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [searched, setSearched] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
   const [proofModal, setProofModal] = useState(null)
   const [proofFile, setProofFile] = useState(null)
   const [proofStatus, setProofStatus] = useState('pending')
   const [proofError, setProofError] = useState('')
 
-  async function handleSearch(e) {
-    e.preventDefault()
-    if (!email.trim()) return
+  const user = getUser()
+
+  useEffect(() => {
+    if (!isLoggedIn()) {
+      window.location.href = '/login'
+      return
+    }
+    loadOrders()
+  }, [])
+
+  async function loadOrders() {
+    if (!user?.email) return
     setLoading(true)
     setError('')
-    setOrders([])
-    setSearched(true)
-    setExpandedId(null)
-
     try {
-      const res = await lookupOrders(email.trim())
+      const res = await lookupOrders(user.email)
       const data = res.data || []
-      // Filter out 'available' status (unassigned tickets)
       const filtered = data.filter(o => o.status !== 'available')
       setOrders(filtered)
       if (filtered.length === 0) {
-        setError('No orders found for this email address.')
+        setError('No orders found for your account.')
       }
     } catch (err) {
-      setError(err.message || 'Failed to look up orders. Please try again.')
+      setError(err.message || 'Failed to load orders.')
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleLogout() {
+    logout()
+    window.location.href = '/login'
   }
 
   async function handleProofSubmit(transactionId) {
@@ -116,9 +119,7 @@ export default function TrackOrder() {
       if (!res.ok) throw new Error(data.error || 'Upload failed')
       setProofStatus('sent')
       setProofFile(null)
-      // Refresh orders to show updated metadata
-      const refreshed = await lookupOrders(email.trim())
-      setOrders((refreshed.data || []).filter(o => o.status !== 'available'))
+      await loadOrders()
     } catch (err) {
       setProofError(err.message || 'Upload failed. Please try again.')
       setProofStatus('pending')
@@ -131,9 +132,7 @@ export default function TrackOrder() {
     try {
       await submitProof(transactionId, { notes: 'Proof sent via WhatsApp' })
       setProofStatus('sent')
-      // Refresh orders
-      const refreshed = await lookupOrders(email.trim())
-      setOrders((refreshed.data || []).filter(o => o.status !== 'available'))
+      await loadOrders()
     } catch (err) {
       setProofError(err.message || 'Failed to confirm. Please try again.')
       setProofStatus('pending')
@@ -147,8 +146,6 @@ export default function TrackOrder() {
     setProofError('')
   }
 
-  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
-
   return (
     <div className="min-h-screen bg-surface-base flex flex-col items-center px-4 py-10 lg:py-16">
       <div className="w-full max-w-lg">
@@ -159,33 +156,17 @@ export default function TrackOrder() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
           </div>
-          <h1 className="text-[28px] font-bold text-text-primary">Track My Order</h1>
-          <p className="text-sm text-text-muted mt-1">Enter your email to view your registrations and submit proof of payment.</p>
-        </div>
-
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email address"
-            className={inputClass}
-            autoFocus
-          />
+          <h1 className="text-[28px] font-bold text-text-primary">My Orders</h1>
+          <p className="text-sm text-text-muted mt-1">
+            Welcome back, <span className="text-text-primary font-medium">{user?.name || user?.email}</span>
+          </p>
           <button
-            type="submit"
-            disabled={loading || !email.trim()}
-            className="px-6 py-3 bg-accent-600 text-white rounded-btn text-sm font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 shrink-0"
+            onClick={handleLogout}
+            className="mt-3 text-xs text-text-dim hover:text-red-400 transition-colors"
           >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              'Search'
-            )}
+            Sign out
           </button>
-        </form>
+        </div>
 
         {/* Error */}
         {error && (
@@ -204,7 +185,7 @@ export default function TrackOrder() {
         {/* Order List */}
         {!loading && orders.length > 0 && (
           <div className="space-y-3">
-            <p className="text-xs text-text-dim mb-2">{orders.length} order{orders.length > 1 ? 's' : ''} found</p>
+            <p className="text-xs text-text-dim mb-2">{orders.length} order{orders.length > 1 ? 's' : ''}</p>
             {orders.map((order) => {
               const isExpanded = expandedId === order.id
               const ticket = order.tickets || {}
@@ -215,7 +196,6 @@ export default function TrackOrder() {
                   key={order.id}
                   className="bg-surface-elevated rounded-card border border-surface-border overflow-hidden"
                 >
-                  {/* Card Header */}
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -253,7 +233,6 @@ export default function TrackOrder() {
                       )}
                     </div>
 
-                    {/* Proof indicator */}
                     {hasProof && (
                       <div className="mt-2 flex items-center gap-1.5 text-xs text-green-400">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +242,6 @@ export default function TrackOrder() {
                       </div>
                     )}
 
-                    {/* Action buttons */}
                     <div className="flex gap-2 mt-4">
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : order.id)}
@@ -282,7 +260,6 @@ export default function TrackOrder() {
                     </div>
                   </div>
 
-                  {/* Expanded Details */}
                   {isExpanded && (
                     <div className="border-t border-surface-border px-5 py-4 bg-surface-card/50 space-y-2.5 text-sm">
                       {[
@@ -324,16 +301,18 @@ export default function TrackOrder() {
           </div>
         )}
 
-        {/* Empty state after search */}
-        {!loading && searched && orders.length === 0 && !error && (
+        {/* Empty state */}
+        {!loading && orders.length === 0 && !error && (
           <div className="text-center py-12">
             <div className="w-14 h-14 bg-surface-card rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-text-secondary text-sm font-medium">No orders found</p>
-            <p className="text-text-dim text-xs mt-1">Try a different email address</p>
+            <p className="text-text-secondary text-sm font-medium">No orders yet</p>
+            <a href="/" className="text-xs text-accent-400 hover:text-accent-300 mt-2 inline-block transition-colors">
+              Register for an event →
+            </a>
           </div>
         )}
 
@@ -380,7 +359,6 @@ export default function TrackOrder() {
                   <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-btn text-xs">{proofError}</div>
                 )}
 
-                {/* Option 1: Upload */}
                 <div className="space-y-2.5">
                   <p className="text-xs font-medium text-text-secondary">Option 1: Upload here</p>
                   <input
@@ -410,14 +388,12 @@ export default function TrackOrder() {
                   </button>
                 </div>
 
-                {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-surface-border" />
                   <span className="text-[11px] text-text-dim">or</span>
                   <div className="flex-1 h-px bg-surface-border" />
                 </div>
 
-                {/* Option 2: WhatsApp */}
                 <div className="space-y-2.5">
                   <p className="text-xs font-medium text-text-secondary">Option 2: Send via WhatsApp</p>
                   <button
