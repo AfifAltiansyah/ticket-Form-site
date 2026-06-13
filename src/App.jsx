@@ -4,11 +4,10 @@ import CheckInPage from './pages/CheckInPage'
 import QRPage from './pages/QRPage'
 import TrackOrder from './pages/TrackOrder'
 import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
 import { isLoggedIn } from './api/auth'
 
 export default function App() {
-  const [mode, setMode] = useState('register')
+  const [mode, setMode] = useState('form')
 
   useEffect(() => {
     function update() {
@@ -17,8 +16,7 @@ export default function App() {
       else if (path === '/qr') setMode('qr')
       else if (path === '/track') setMode('track')
       else if (path === '/login') setMode('login')
-      else if (path === '/register') setMode('register')
-      else setMode('register')
+      else setMode('form')
     }
     update()
     window.addEventListener('popstate', update)
@@ -39,14 +37,9 @@ export default function App() {
           <a href="/" className="text-xs text-text-dim tracking-tight hover:text-text-muted transition-colors">Event Registration</a>
           <div className="flex items-center gap-4">
             {loggedIn ? (
-              <>
-                <a href="/track" className="text-xs text-accent-400 hover:text-accent-300 transition-colors">My Orders</a>
-              </>
+              <a href="/track" className="text-xs text-accent-400 hover:text-accent-300 transition-colors">My Orders</a>
             ) : (
-              <>
-                <a href="/login" className="text-xs text-text-dim hover:text-text-muted transition-colors">Sign In</a>
-                <a href="/register" className="text-xs text-accent-400 hover:text-accent-300 transition-colors">Register</a>
-              </>
+              <a href="/login" className="text-xs text-accent-400 hover:text-accent-300 transition-colors">Sign In</a>
             )}
           </div>
         </nav>
@@ -56,7 +49,6 @@ export default function App() {
          mode === 'qr' ? <QRPage /> :
          mode === 'track' ? <TrackOrder /> :
          mode === 'login' ? <LoginPage onLogin={() => navigate('/')} /> :
-         mode === 'register' ? <RegisterPage onRegister={() => navigate('/')} /> :
          <FormPage />}
       </main>
     </div>
