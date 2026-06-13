@@ -35,12 +35,20 @@ function compressAndEncode(file) {
   })
 }
 
-function setTicketParam(id) {
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+function setTicketParam(ticket) {
   const url = new URL(window.location)
-  if (id) {
-    url.searchParams.set('ticket_id', id)
+  if (ticket) {
+    url.searchParams.set('ticket', slugify(ticket.title || String(ticket.id)))
   } else {
-    url.searchParams.delete('ticket_id')
+    url.searchParams.delete('ticket')
   }
   history.replaceState(null, '', url)
 }
@@ -79,9 +87,10 @@ export default function FormPage() {
         setTickets(ticketData)
         setPaymentOptions((optionsJson.data || []).filter((o) => o.is_active))
 
-        const urlParam = new URLSearchParams(window.location.search).get('ticket_id')
-        if (urlParam && ticketData.some((t) => t.id === Number(urlParam))) {
-          setForm((prev) => ({ ...prev, ticket_id: urlParam, quantity: 1 }))
+        const urlParam = new URLSearchParams(window.location.search).get('ticket')
+        if (urlParam) {
+          const match = ticketData.find((t) => slugify(t.title || String(t.id)) === urlParam)
+          if (match) setForm((prev) => ({ ...prev, ticket_id: String(match.id), quantity: 1 }))
         }
       } catch (err) {
         setError(err.message || 'Failed to load data. Please try again later.')
@@ -100,7 +109,8 @@ export default function FormPage() {
         const next = { ...prev, [field]: value }
         if (field === 'ticket_id') {
           next.quantity = 1
-          setTicketParam(value)
+          const ticket = tickets.find((t) => t.id === Number(value))
+          setTicketParam(ticket || null)
         }
         return next
       })
@@ -136,7 +146,7 @@ export default function FormPage() {
       else {
         setResult(data.transaction)
         if (data.warning) setError(data.warning)
-        setTicketParam('')
+        setTicketParam(null)
         setForm({ name: '', email: '', phone: '', ticket_id: '', quantity: 1, payment_method: '', drink: '', proof: null })
       }
     } catch { setError('Network error. Please try again.') }
@@ -454,7 +464,7 @@ export default function FormPage() {
                 {availableTickets.map((ticket) => (
                   <button
                     key={ticket.id}
-                    onClick={() => { setTicketParam(String(ticket.id)); setForm((prev) => ({ ...prev, ticket_id: String(ticket.id), quantity: 1 })) }}
+                    onClick={() => { setTicketParam(ticket); setForm((prev) => ({ ...prev, ticket_id: String(ticket.id), quantity: 1 })) }}
                     className="text-left bg-surface-card border border-surface-border rounded-card p-4 hover:border-accent-500/50 hover:bg-surface-hover transition-all active:scale-[0.98] group"
                   >
                     <div className="flex items-center gap-3">
