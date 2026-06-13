@@ -3,14 +3,17 @@ import FormPage from './pages/FormPage'
 import CheckInPage from './pages/CheckInPage'
 import QRPage from './pages/QRPage'
 import TrackOrder from './pages/TrackOrder'
-import LoginPage from './pages/LoginPage'
+import LandingPage from './pages/LandingPage'
+import NavBar from './components/NavBar'
 import { isLoggedIn } from './api/auth'
 
 export default function App() {
   const [mode, setMode] = useState('form')
+  const [loggedIn, setLoggedIn] = useState(isLoggedIn())
 
   useEffect(() => {
     function update() {
+      setLoggedIn(isLoggedIn())
       const path = window.location.pathname
       if (path === '/checkin') setMode('checkin')
       else if (path === '/qr') setMode('qr')
@@ -28,28 +31,22 @@ export default function App() {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  const loggedIn = isLoggedIn()
+  // If not logged in and trying to access protected routes, show landing
+  const isProtected = mode === 'track'
+  const showLanding = !loggedIn && (mode === 'form' || isProtected || mode === 'login')
+
+  if (showLanding) {
+    return <LandingPage onSuccess={() => { setLoggedIn(true); navigate('/') }} />
+  }
 
   return (
     <div className="min-h-screen bg-surface-base flex flex-col">
-      <header className="w-full bg-black px-4 lg:px-8">
-        <nav className="max-w-[1440px] mx-auto h-11 flex items-center justify-between">
-          <a href="/" className="text-xs text-text-dim tracking-tight hover:text-text-muted transition-colors">Event Registration</a>
-          <div className="flex items-center gap-4">
-            {loggedIn ? (
-              <a href="/track" className="text-xs text-accent-400 hover:text-accent-300 transition-colors">My Orders</a>
-            ) : (
-              <a href="/login" className="text-xs text-accent-400 hover:text-accent-300 transition-colors">Sign In</a>
-            )}
-          </div>
-        </nav>
-      </header>
+      <NavBar currentMode={mode} navigate={navigate} />
       <main className="flex-1">
-        {mode === 'checkin' ? <CheckInPage /> :
-         mode === 'qr' ? <QRPage /> :
-         mode === 'track' ? <TrackOrder /> :
-         mode === 'login' ? <LoginPage onLogin={() => navigate('/')} /> :
-         <FormPage />}
+        {mode === 'checkin' && <CheckInPage />}
+        {mode === 'qr' && <QRPage />}
+        {mode === 'track' && <TrackOrder />}
+        {mode === 'form' && <FormPage />}
       </main>
     </div>
   )
