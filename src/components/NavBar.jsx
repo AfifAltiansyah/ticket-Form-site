@@ -17,11 +17,9 @@ export default function NavBar({ currentMode, navigate, loggedIn, onLoginClick, 
           onClick={(e) => { e.preventDefault(); navigate('/') }}
           className="flex items-center gap-2.5 group"
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-accent-500 to-accent-700 rounded-lg flex items-center justify-center shadow-lg shadow-accent-600/20 group-hover:shadow-accent-600/30 transition-shadow">
-            <span className="text-sm font-bold text-white">Z</span>
-          </div>
+          <img src="/favicon.png" alt="ACODERA" className="w-8 h-8 rounded-lg" />
           <span className="text-sm font-semibold text-text-primary tracking-tight hidden sm:block">
-            Zero To AI
+            ACODERA
           </span>
         </a>
 

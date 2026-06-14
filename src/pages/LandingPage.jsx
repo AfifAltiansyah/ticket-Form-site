@@ -97,7 +97,7 @@ export default function LandingPage({ onSuccess }) {
         <div className="w-full max-w-[380px]">
           {/* Mobile logo (hidden on desktop) */}
           <div className="lg:hidden mb-8 text-center">
-            <h2 className="text-2xl font-bold text-text-primary">Zero To AI</h2>
+            <h2 className="text-2xl font-bold text-text-primary">ACODERA</h2>
           </div>
 
           {/* Tab Switcher */}

@@ -57,9 +57,7 @@ export default function AuthModal({ onClose, onSuccess }) {
 
         {/* Header */}
         <div className="px-8 pt-8 pb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-accent-600/20">
-            <span className="text-lg font-bold text-white">Z</span>
-          </div>
+          <img src="/favicon.png" alt="ACODERA" className="w-12 h-12 rounded-xl mb-4" />
           <h2 className="text-xl font-bold text-text-primary mb-1">
             {mode === 'login' ? 'Welcome back' : 'Create account'}
           </h2>
