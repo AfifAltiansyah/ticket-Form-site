@@ -74,10 +74,11 @@ export default function TrackOrder() {
   const [proofError, setProofError] = useState('')
 
   const user = getUser()
+  const loggedIn = isLoggedIn()
 
   // Auto-load orders if logged in
   useEffect(() => {
-    if (isLoggedIn() && user?.email) {
+    if (loggedIn && user?.email) {
       setEmail(user.email)
       loadOrders(user.email)
     }
