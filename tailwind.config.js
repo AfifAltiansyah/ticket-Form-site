@@ -4,27 +4,27 @@ export default {
     extend: {
       colors: {
         accent: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
+          50: '#fff5f0',
+          100: '#ffdace',
+          200: '#ffb599',
+          300: '#ff8f64',
+          400: '#ff6633',
+          500: '#fe330a',
+          600: '#e02b07',
+          700: '#c22306',
         },
         surface: {
-          base: '#0f0f0f',
-          elevated: '#1a1a1a',
-          card: '#222222',
-          hover: '#2a2a2a',
-          border: '#2e2e2e',
+          base: '#efeae3',
+          elevated: '#f8f5f0',
+          card: '#ffffff',
+          hover: '#f0ece5',
+          border: '#e0d8cc',
         },
         text: {
-          primary: '#ffffff',
-          secondary: '#a3a3a3',
-          muted: '#737373',
-          dim: '#525252',
+          primary: '#000000',
+          secondary: '#5c5c5c',
+          muted: '#8c8c8c',
+          dim: '#b0b0b0',
         },
       },
       borderRadius: {
@@ -32,7 +32,16 @@ export default {
         'btn': '12px',
       },
       boxShadow: {
-        'card': '0 1px 3px rgba(0,0,0,0.4), 0 20px 60px -20px rgba(0,0,0,0.5)',
+        'card': '0 1px 3px rgba(0,0,0,0.06), 0 20px 60px -20px rgba(0,0,0,0.1)',
+      },
+      keyframes: {
+        'spin-slow': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+      },
+      animation: {
+        'spin-slow': 'spin-slow 20s linear infinite',
       },
     },
   },

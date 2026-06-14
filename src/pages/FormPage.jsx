@@ -342,7 +342,9 @@ export default function FormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-base flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-surface-base flex flex-col lg:flex-row relative overflow-hidden">
+      {/* Decorative glow */}
+      <div className="orange-glow absolute -right-[150px] top-[370px] -z-[1] h-[500px] w-[500px] animate-spin-slow rounded-full opacity-60" />
       {/* Left — Form */}
       <div className="lg:w-5/12 xl:w-4/12 flex items-start justify-center px-5 py-10 lg:py-16 overflow-y-auto">
         <div className="w-full max-w-[380px]">

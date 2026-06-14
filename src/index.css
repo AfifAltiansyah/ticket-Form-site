@@ -12,12 +12,12 @@
   }
 
   body {
-    background: #0f0f0f;
-    color: #ffffff;
+    background: #efeae3;
+    color: #000000;
   }
 
   *:focus-visible {
-    outline: 2px solid #4f46e5;
+    outline: 2px solid #fe330a;
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -26,4 +26,11 @@
 @layer utilities {
   .scrollbar-none::-webkit-scrollbar { display: none; }
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@layer components {
+  .orange-glow {
+    filter: blur(55px);
+    background: radial-gradient(50% 50%, #ff9831 0%, #fe330a 100%);
+  }
 }

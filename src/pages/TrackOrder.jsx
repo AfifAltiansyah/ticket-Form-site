@@ -177,7 +177,9 @@ export default function TrackOrder() {
   const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
 
   return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center px-4 py-10 lg:py-16">
+    <div className="min-h-screen bg-surface-base flex flex-col items-center px-4 py-10 lg:py-16 relative overflow-hidden">
+      {/* Decorative glow */}
+      <div className="orange-glow absolute -left-[200px] top-[100px] -z-[1] h-[400px] w-[400px] animate-spin-slow rounded-full opacity-40" />
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
