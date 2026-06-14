@@ -281,6 +281,12 @@ export default function TrackOrder() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                           {ticket.location}
+                          {ticket.maps_link && (
+                            <a href={ticket.maps_link} target="_blank" rel="noopener noreferrer"
+                              className="text-accent-500 hover:text-accent-600 text-xs font-medium underline ml-1">
+                              Google Maps
+                            </a>
+                          )}
                         </span>
                       )}
                     </div>
