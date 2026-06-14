@@ -1,9 +1,5 @@
-import { getAuthHeaders } from './auth'
-
 export async function lookupOrders(email) {
-  const res = await fetch(`/api/external/transactions?email=${encodeURIComponent(email)}`, {
-    headers: getAuthHeaders(),
-  })
+  const res = await fetch(`/api/external/transactions?email=${encodeURIComponent(email)}`)
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.error || `Lookup failed (${res.status})`)
@@ -14,7 +10,7 @@ export async function lookupOrders(email) {
 export async function submitProof(transactionId, metadata) {
   const res = await fetch(`/api/external/transactions/${transactionId}`, {
     method: 'PATCH',
-    headers: getAuthHeaders(),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ metadata }),
   })
   if (!res.ok) {
@@ -27,7 +23,7 @@ export async function submitProof(transactionId, metadata) {
 export async function uploadProof(transactionId, proof, proofName) {
   const res = await fetch('/api/upload-proof', {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ transaction_id: transactionId, proof, proof_name: proofName }),
   })
   if (!res.ok) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { lookupOrders, submitProof } from '../api/crm'
-import { getUser, isLoggedIn } from '../api/auth'
+import { isLoggedIn, getUser } from '../api/auth'
 import { useRealtimeRefresh } from '../hooks/useSupabaseRealtime'
 
 function formatPrice(n) {
@@ -62,8 +62,10 @@ function compressAndEncode(file) {
 }
 
 export default function TrackOrder() {
+  const [email, setEmail] = useState('')
   const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
   const [error, setError] = useState('')
   const [expandedId, setExpandedId] = useState(null)
   const [proofModal, setProofModal] = useState(null)
@@ -73,34 +75,52 @@ export default function TrackOrder() {
 
   const user = getUser()
 
+  // Auto-load orders if logged in
   useEffect(() => {
-    if (!isLoggedIn()) {
-      window.location.href = '/login'
-      return
+    if (isLoggedIn() && user?.email) {
+      setEmail(user.email)
+      loadOrders(user.email)
     }
-    loadOrders()
   }, [])
 
-  // Real-time: refresh orders when transactions change (status updates, proof uploads)
-  useRealtimeRefresh('transactions', loadOrders)
+  // Real-time: refresh orders when transactions change
+  useRealtimeRefresh('transactions', () => {
+    if (email) loadOrders(email)
+  })
 
-  async function loadOrders() {
-    if (!user?.email) return
+  async function loadOrders(emailToLookup) {
+    if (!emailToLookup) return
     setLoading(true)
     setError('')
+    setSearched(true)
     try {
-      const res = await lookupOrders(user.email)
+      const res = await lookupOrders(emailToLookup)
       const data = res.data || []
       const filtered = data.filter(o => o.status !== 'available')
       setOrders(filtered)
       if (filtered.length === 0) {
-        setError('No orders found for your account.')
+        setError('No orders found for this email.')
       }
     } catch (err) {
       setError(err.message || 'Failed to load orders.')
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleSearch(e) {
+    e.preventDefault()
+    if (!email.trim()) return
+    loadOrders(email.trim())
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    setEmail('')
+    setOrders([])
+    setSearched(false)
+    window.location.reload()
   }
 
   async function handleProofSubmit(transactionId) {
@@ -122,7 +142,7 @@ export default function TrackOrder() {
       if (!res.ok) throw new Error(data.error || 'Upload failed')
       setProofStatus('sent')
       setProofFile(null)
-      await loadOrders()
+      if (email) await loadOrders(email)
     } catch (err) {
       setProofError(err.message || 'Upload failed. Please try again.')
       setProofStatus('pending')
@@ -139,7 +159,7 @@ export default function TrackOrder() {
     try {
       await submitProof(transactionId, { notes: 'Proof sent via WhatsApp' })
       setProofStatus('sent')
-      await loadOrders()
+      if (email) await loadOrders(email)
     } catch (err) {
       setProofError(err.message || 'Failed to confirm. Please try again.')
       setProofStatus('pending')
@@ -153,16 +173,49 @@ export default function TrackOrder() {
     setProofError('')
   }
 
+  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
+
   return (
     <div className="min-h-screen bg-surface-base flex flex-col items-center px-4 py-10 lg:py-16">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-[28px] font-bold text-text-primary">My Orders</h1>
+          <h1 className="text-[28px] font-bold text-text-primary">Track My Order</h1>
           <p className="text-sm text-text-muted mt-1">
-            Welcome back, <span className="text-text-primary font-medium">{user?.name || user?.email}</span>
+            {loggedIn
+              ? <>Welcome back, <span className="text-text-primary font-medium">{user?.name || user?.email}</span></>
+              : 'Enter your email to view your orders and submit proof.'}
           </p>
+          {loggedIn && (
+            <button onClick={handleLogout} className="mt-2 text-xs text-text-dim hover:text-red-400 transition-colors">
+              Sign out
+            </button>
+          )}
         </div>
+
+        {/* Search Form */}
+        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email address"
+            className={inputClass}
+            autoFocus={!loggedIn}
+          />
+          <button
+            type="submit"
+            disabled={loading || !email.trim()}
+            className="px-6 py-3 bg-accent-600 text-white rounded-btn text-sm font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 shrink-0"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              'Search'
+            )}
+          </button>
+        </form>
 
         {/* Error */}
         {error && (
@@ -298,14 +351,14 @@ export default function TrackOrder() {
         )}
 
         {/* Empty state */}
-        {!loading && orders.length === 0 && !error && (
+        {!loading && searched && orders.length === 0 && !error && (
           <div className="text-center py-12">
             <div className="w-14 h-14 bg-surface-card rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-text-secondary text-sm font-medium">No orders yet</p>
+            <p className="text-text-secondary text-sm font-medium">No orders found</p>
             <a href="/" className="text-xs text-accent-400 hover:text-accent-300 mt-2 inline-block transition-colors">
               Register for an event →
             </a>
