@@ -57,6 +57,17 @@ export default function FormPage() {
         if (urlParam) {
           const match = ticketData.find((t) => slugify(t.title || String(t.id)) === urlParam)
           if (match) setForm((prev) => ({ ...prev, ticket_id: String(match.id), quantity: 1 }))
+        } else {
+          // Auto-select closest upcoming event
+          const now = new Date()
+          const upcoming = ticketData
+            .filter((t) => new Date(t.date_time) > now && (t.remaining ?? t.quantity) > 0)
+            .sort((a, b) => new Date(a.date_time) - new Date(b.date_time))
+          if (upcoming.length > 0) {
+            const closest = upcoming[0]
+            setForm((prev) => ({ ...prev, ticket_id: String(closest.id), quantity: 1 }))
+            setTicketParam(closest)
+          }
         }
       } catch (err) {
         setError(err.message || 'Failed to load data. Please try again later.')
