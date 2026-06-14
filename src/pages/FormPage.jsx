@@ -432,7 +432,7 @@ export default function FormPage() {
             <div>
               <label className={labelClass}>Drink</label>
               <select value={form.drink} onChange={updateField('drink')} className={selectClass}>
-                <option value="">No drink</option>
+                <option value="">Select Drink</option>
                 <option value="regular_tea">Regular Tea</option>
                 <option value="javanish_latte">Javanish Latte</option>
                 <option value="latte">Latte</option>
@@ -545,9 +545,9 @@ export default function FormPage() {
                 <ul className="space-y-2.5">
                   {[
                     { icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5', text: 'A laptop (fully charged) + charger' },
-                    { icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', text: 'Python 3.10+ installed on your machine' },
+                    /*{ icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', text: 'Python 3.10+ installed on your machine' },
                     { icon: 'M13 10V3L4 14h7v7l9-11h-7z', text: 'A code editor (VS Code recommended)' },
-                    { icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', text: 'Notebook & pen for taking notes' },
+                    { icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', text: 'Notebook & pen for taking notes' },*/
                     { icon: 'M14.828 14.828a4 4 0 01-5.656 0M9.172 9.172a4 4 0 015.656 0M10 9V5a1 1 0 011-1h2a1 1 0 011 1v4m-4 6v4a1 1 0 001 1h2a1 1 0 001-1v-4', text: 'Curiosity and enthusiasm to learn AI!' },
                   ].map(({ icon, text }) => (
                     <li key={text} className="flex items-start gap-3 text-[13px] text-text-secondary">
