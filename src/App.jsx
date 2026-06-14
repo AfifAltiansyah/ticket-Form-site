@@ -5,7 +5,7 @@ import QRPage from './pages/QRPage'
 import TrackOrder from './pages/TrackOrder'
 import NavBar from './components/NavBar'
 import AuthModal from './components/AuthModal'
-import { isLoggedIn } from './api/auth'
+import { isLoggedIn, logout } from './api/auth'
 
 export default function App() {
   const [mode, setMode] = useState('form')
@@ -38,7 +38,7 @@ export default function App() {
         navigate={navigate}
         loggedIn={loggedIn}
         onLoginClick={() => setShowAuthModal(true)}
-        onLogout={() => { setLoggedIn(false); navigate('/') }}
+        onLogout={() => { logout(); setLoggedIn(false); navigate('/') }}
       />
       <main className="flex-1">
         {mode === 'checkin' && <CheckInPage />}
