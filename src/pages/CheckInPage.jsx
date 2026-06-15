@@ -34,15 +34,15 @@ export default function CheckInPage() {
     }
   }
 
-  const inputClass = 'w-full px-4 py-3 bg-white/10 border border-white/20 rounded-btn text-[17px] text-white placeholder:text-white/30 outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all text-center tracking-[0.1em] font-mono'
+  const inputClass = 'w-full px-4 py-3 bg-white border border-surface-border rounded-btn text-[17px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all text-center tracking-[0.1em] font-mono'
   const labelClass = 'block text-[13px] font-medium text-text-secondary mb-1.5'
 
   return (
     <div className="min-h-screen bg-surface-base flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-7">
-          <div className="w-16 h-16 bg-accent-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-accent-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -51,7 +51,7 @@ export default function CheckInPage() {
         </div>
 
         {error && (
-          <div className="mb-5 px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-btn text-sm text-center">{error}</div>
+          <div className="mb-5 px-4 py-3 bg-red-50/80 border border-red-200 text-red-600 rounded-btn text-sm text-center">{error}</div>
         )}
 
         {result ? (
@@ -74,7 +74,7 @@ export default function CheckInPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-text-muted">Status</span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">checked in</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">checked in</span>
               </div>
               {result.checked_in_at && (
                 <div className="flex justify-between">
@@ -108,7 +108,7 @@ export default function CheckInPage() {
             <button
               type="submit"
               disabled={loading || !code.trim()}
-              className="w-full py-3.5 bg-accent-600 text-white rounded-btn text-[15px] font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="w-full py-3.5 bg-accent-600 text-white rounded-btn text-[15px] font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {loading ? 'Checking...' : 'Check In'}
             </button>
