@@ -27,6 +27,7 @@ export default function FormPage() {
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
+  const [copiedAcct, setCopiedAcct] = useState(false)
 
   const [form, setForm] = useState({
     name: '',
@@ -208,34 +209,72 @@ export default function FormPage() {
     const txnId = result.transaction_id || result.id || ''
     const whatsappMsg = `Hi ACODERA, Ini Bukti Transferku Dengan Transaction ID ${txnId} - ${result.ticket || ''}`
 
+    const paymentOption = paymentOptions.find((o) => o.value === result.payment_method)
+    const payLabel = paymentOption?.label || result.payment_method.replace(/_/g, ' ')
+    const payNumber = paymentOption?.account_number || paymentOption?.phone
+    const copyAccount = () => {
+      if (!payNumber) return
+      navigator.clipboard?.writeText(String(payNumber))
+      setCopiedAcct(true)
+      setTimeout(() => setCopiedAcct(false), 1500)
+    }
+
     return (
       <div className="min-h-screen bg-surface-base flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm space-y-4">
-          {/* Transaction Confirmed */}
+          {/* Registration Pending */}
           <div className="bg-surface-elevated rounded-card border border-surface-border p-8 text-center">
-            <div className="w-14 h-14 bg-accent-500/10 rounded-full flex items-center justify-center mx-auto mb-5">
-              <svg className="w-7 h-7 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <div className="w-14 h-14 bg-amber-400/15 rounded-full flex items-center justify-center mx-auto mb-5">
+              <svg className="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-text-primary mb-1">Registration Confirmed</h2>
-            <p className="text-text-muted text-sm mb-6">Thank you, {result.buyer_name}.</p>
+            <h2 className="text-xl font-bold text-text-primary mb-1">Registration Pending</h2>
+            <p className="text-text-muted text-sm mb-6">Please complete the payment</p>
+
             <div className="bg-surface-card rounded-btn p-4 text-left space-y-2.5 text-sm">
               {[
                 ['Transaction ID', result.transaction_id],
                 ['Event', result.ticket],
                 ['Total', formatPrice(result.total_amount)],
-                ['Payment', result.payment_method.replace(/_/g, ' ')],
               ].map(([label, value]) => (
-                <div key={label} className="flex justify-between">
-                  <span className="text-text-muted">{label}</span>
-                  <span className="font-medium text-text-secondary">{value}</span>
+                <div key={label} className="flex justify-between gap-4">
+                  <span className="text-text-muted shrink-0">{label}</span>
+                  <span className="font-medium text-text-secondary text-right">{value}</span>
                 </div>
               ))}
-              <div className="flex justify-between">
-                <span className="text-text-muted">Status</span>
-                <span className="text-xs font-medium bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded-full">{result.status}</span>
+              <div className="flex justify-between gap-4">
+                <span className="text-text-muted shrink-0">Status</span>
+                <span className="text-xs font-medium bg-amber-400/10 text-amber-500 px-2 py-0.5 rounded-full capitalize">{result.status}</span>
               </div>
+            </div>
+
+            {/* Payment instructions — full bank account */}
+            <div className="mt-4 rounded-btn border border-accent-500/30 bg-accent-500/5 p-4 text-left">
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Transfer payment to</p>
+              <p className="text-sm font-semibold text-text-primary uppercase">{payLabel}</p>
+              {payNumber && (
+                <div className="flex items-center justify-between gap-3 mt-2 bg-surface-card rounded-lg px-3 py-2.5">
+                  <span className="font-mono text-base sm:text-lg font-semibold text-text-primary tracking-wide break-all">{payNumber}</span>
+                  <button
+                    type="button"
+                    onClick={copyAccount}
+                    className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-accent-500 hover:text-accent-400 transition-colors"
+                  >
+                    {copiedAcct ? (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -336,7 +375,7 @@ export default function FormPage() {
           {/* Register Again */}
           <button type="button" onClick={() => { setResult(null); setProofFile(null); setProofStatus('pending'); setProofError('') }}
             className="w-full py-3 px-6 bg-accent-600 text-white rounded-btn text-sm font-medium hover:bg-accent-500 active:scale-[0.98] transition-all">
-            Register Again
+            Buy ticket again
           </button>
         </div>
       </div>
@@ -611,13 +650,21 @@ export default function FormPage() {
                       onClick={() => { setTicketParam(ticket); setForm((prev) => ({ ...prev, ticket_id: String(ticket.id), quantity: 1 })) }}
                       className="group text-left bg-surface-card border border-surface-border rounded-card overflow-hidden hover:border-accent-500/60 hover:shadow-card hover:-translate-y-0.5 transition-all active:translate-y-0 active:scale-[0.99]"
                     >
-                      <div className="relative aspect-[3/4] bg-surface-base overflow-hidden">
+                      <div className="relative aspect-[4/5] bg-surface-base overflow-hidden">
                         {ticket.image_url ? (
-                          <img
-                            src={ticket.image_url}
-                            alt={ticket.title}
-                            className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-500"
-                          />
+                          <>
+                            <img
+                              src={ticket.image_url}
+                              alt=""
+                              aria-hidden="true"
+                              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
+                            />
+                            <img
+                              src={ticket.image_url}
+                              alt={ticket.title}
+                              className="relative w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-500"
+                            />
+                          </>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent-500/20 to-accent-600/5">
                             <span className="text-3xl font-bold text-accent-400/80">

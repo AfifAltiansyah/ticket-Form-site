@@ -153,43 +153,48 @@ export default function TrackOrder() {
     setProofError('')
   }
 
-  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
+  const inputClass = 'w-full px-4 py-3.5 bg-white border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-hidden focus:border-accent-500 focus:ring-2 focus:ring-accent-500/40 transition-all'
 
   return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center px-4 py-10 lg:py-16 relative overflow-hidden">
-      {/* Decorative glow */}
-      <div className="orange-glow absolute left-[-200px] top-[100px] z-[-1] h-[400px] w-[400px] animate-spin-slow rounded-full opacity-40" />
-      <div className="w-full max-w-lg">
+    <div className="min-h-[calc(100dvh-3.5rem)] bg-surface-base px-4 py-8 flex items-start sm:items-center justify-center">
+      <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-[28px] font-bold text-text-primary">Track My Order</h1>
-          <p className="text-sm text-text-muted mt-1">
+        <div className="text-center mb-7">
+          <div className="w-16 h-16 bg-accent-500/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M11 17a6 6 0 100-12 6 6 0 000 12z" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Track My Order</h1>
+          <p className="text-sm text-text-muted mt-1.5">
             Enter your email to view your orders and submit proof.
           </p>
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email address"
-            className={inputClass}
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={loading || !email.trim()}
-            className="px-6 py-3 bg-accent-600 text-white rounded-btn text-sm font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 shrink-0"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              'Search'
-            )}
-          </button>
+        <form onSubmit={handleSearch} className="bg-surface-elevated border border-surface-border rounded-2xl shadow-card p-4 mb-6">
+          <div className="flex gap-2">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email address"
+              className={inputClass}
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={loading || !email.trim()}
+              className="px-5 py-3.5 bg-accent-600 text-white rounded-btn text-sm font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 shrink-0"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                'Search'
+              )}
+            </button>
+          </div>
         </form>
 
         {/* Error */}
@@ -218,7 +223,7 @@ export default function TrackOrder() {
               return (
                 <div
                   key={order.id}
-                  className="bg-surface-elevated rounded-card border border-surface-border overflow-hidden"
+                  className="bg-surface-elevated rounded-2xl border border-surface-border shadow-card overflow-hidden"
                 >
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-3 mb-3">
@@ -338,7 +343,7 @@ export default function TrackOrder() {
         {/* Empty state */}
         {!loading && searched && orders.length === 0 && !error && (
           <div className="text-center py-12">
-            <div className="w-14 h-14 bg-surface-card rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-surface-card rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -365,7 +370,7 @@ export default function TrackOrder() {
           onClick={() => setProofModal(null)}
         >
           <div
-            className="w-full max-w-sm bg-surface-elevated rounded-card border border-surface-border p-6 space-y-4"
+            className="w-full max-w-sm bg-surface-elevated rounded-2xl border border-surface-border shadow-card p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
