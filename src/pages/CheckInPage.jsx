@@ -64,21 +64,21 @@ export default function CheckInPage() {
             <h2 className="text-xl font-semibold text-text-primary mb-1">{result.buyer_name}</h2>
             <p className="text-sm text-text-muted mb-5">{result.ticket}</p>
             <div className="bg-surface-card rounded-btn p-3 space-y-2 text-sm mb-5">
-              <div className="flex justify-between">
-                <span className="text-text-muted">Transaction ID</span>
-                <span className="font-medium text-text-secondary font-mono text-xs">{result.transaction_id}</span>
+              <div className="flex gap-3">
+                <span className="text-text-muted shrink-0">Transaction ID</span>
+                <span className="font-medium text-text-secondary font-mono text-xs break-all">{result.transaction_id}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Email</span>
-                <span className="text-text-secondary">{result.buyer_email}</span>
+              <div className="flex gap-3">
+                <span className="text-text-muted shrink-0">Email</span>
+                <span className="text-text-secondary truncate">{result.buyer_email}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text-muted">Status</span>
+              <div className="flex gap-3">
+                <span className="text-text-muted shrink-0">Status</span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">checked in</span>
               </div>
               {result.checked_in_at && (
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Checked in at</span>
+                <div className="flex gap-3">
+                  <span className="text-text-muted shrink-0">Checked in at</span>
                   <span className="text-text-secondary text-xs">
                     {new Date(result.checked_in_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                   </span>
