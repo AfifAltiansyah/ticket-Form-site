@@ -53,21 +53,12 @@ export default function FormPage() {
         setTickets(ticketData)
         setPaymentOptions((optionsJson.data || []).filter((o) => o.is_active))
 
+        // Only preselect when the URL deep-links a specific ticket (e.g. /?ticket=slug).
+        // On a bare home visit, leave nothing selected so the user sees the ticket list.
         const urlParam = new URLSearchParams(window.location.search).get('ticket')
         if (urlParam) {
           const match = ticketData.find((t) => slugify(t.title || String(t.id)) === urlParam)
           if (match) setForm((prev) => ({ ...prev, ticket_id: String(match.id), quantity: 1 }))
-        } else {
-          // Auto-select closest upcoming event
-          const now = new Date()
-          const upcoming = ticketData
-            .filter((t) => new Date(t.date_time) > now && (t.remaining ?? t.quantity) > 0)
-            .sort((a, b) => new Date(a.date_time) - new Date(b.date_time))
-          if (upcoming.length > 0) {
-            const closest = upcoming[0]
-            setForm((prev) => ({ ...prev, ticket_id: String(closest.id), quantity: 1 }))
-            setTicketParam(closest)
-          }
         }
       } catch (err) {
         setError(err.message || 'Failed to load data. Please try again later.')
@@ -361,7 +352,7 @@ export default function FormPage() {
         <div className="w-full max-w-[380px]">
           <div className="mb-7">
             <h1 className="text-[28px] lg:text-[32px] font-bold text-text-primary">Event Registration</h1>
-            <p className="text-sm text-text-muted mt-0.5">Secure your spot — fill in the details below.</p>
+            <p className="text-sm text-text-muted mt-0.5">Secure your spot, fill in the details below.</p>
           </div>
 
           {error && (
@@ -559,7 +550,7 @@ export default function FormPage() {
                     /*{ icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', text: 'Python 3.10+ installed on your machine' },
                     { icon: 'M13 10V3L4 14h7v7l9-11h-7z', text: 'A code editor (VS Code recommended)' },
                     { icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', text: 'Notebook & pen for taking notes' },*/
-                    { icon: 'M14.828 14.828a4 4 0 01-5.656 0M9.172 9.172a4 4 0 015.656 0M10 9V5a1 1 0 011-1h2a1 1 0 011 1v4m-4 6v4a1 1 0 001 1h2a1 1 0 001-1v-4', text: 'Curiosity and enthusiasm to learn AI!' },
+                    { icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', text: 'Curiosity and enthusiasm to learn AI!' },
                   ].map(({ icon, text }) => (
                     <li key={text} className="flex items-start gap-3 text-[13px] text-text-secondary">
                       <svg className="w-4 h-4 text-accent-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -597,32 +588,67 @@ export default function FormPage() {
             )}
           </>
         ) : (
-          <div className="w-full max-w-xl text-center">
-            <p className="text-lg font-semibold text-text-secondary mb-2">No event selected</p>
-            <p className="text-sm text-text-dim mb-8">Pick one from the dropdown to see details here</p>
+          <div className="w-full max-w-3xl">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-accent-500/10 mb-4">
+                <svg className="w-6 h-6 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-text-primary">Choose an event</h2>
+              <p className="text-sm text-text-dim mt-1.5">Tap a ticket to get started, or pick one from the dropdown</p>
+            </div>
 
             {availableTickets.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {availableTickets.map((ticket) => (
-                  <button
-                    type="button"
-                    key={ticket.id}
-                    onClick={() => { setTicketParam(ticket); setForm((prev) => ({ ...prev, ticket_id: String(ticket.id), quantity: 1 })) }}
-                    className="text-left bg-surface-card border border-surface-border rounded-card p-4 hover:border-accent-500/50 hover:bg-surface-hover transition-all active:scale-[0.98] group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-accent-500/10 flex items-center justify-center shrink-0 group-hover:bg-accent-500/20 transition-colors">
-                        <span className="text-sm font-bold text-accent-400">
-                          {ticket.abbreviation?.charAt(0) || ticket.title?.charAt(0) || 'E'}
-                        </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {availableTickets.map((ticket) => {
+                  const left = ticket.remaining ?? ticket.quantity ?? 0
+                  const lowStock = left > 0 && left <= 5
+                  return (
+                    <button
+                      type="button"
+                      key={ticket.id}
+                      onClick={() => { setTicketParam(ticket); setForm((prev) => ({ ...prev, ticket_id: String(ticket.id), quantity: 1 })) }}
+                      className="group text-left bg-surface-card border border-surface-border rounded-card overflow-hidden hover:border-accent-500/60 hover:shadow-card hover:-translate-y-0.5 transition-all active:translate-y-0 active:scale-[0.99]"
+                    >
+                      <div className="relative aspect-[3/4] bg-surface-base overflow-hidden">
+                        {ticket.image_url ? (
+                          <img
+                            src={ticket.image_url}
+                            alt={ticket.title}
+                            className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent-500/20 to-accent-600/5">
+                            <span className="text-3xl font-bold text-accent-400/80">
+                              {ticket.abbreviation?.charAt(0) || ticket.title?.charAt(0) || 'E'}
+                            </span>
+                          </div>
+                        )}
+                        {lowStock && (
+                          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-red-500/90 text-white text-[10px] font-semibold backdrop-blur-sm">
+                            Only {left} left
+                          </span>
+                        )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-text-primary truncate">{ticket.title}</p>
-                        <p className="text-xs text-text-muted mt-0.5">{formatPrice(ticket.price)} &middot; {ticket.remaining ?? ticket.quantity} left</p>
+                      <div className="p-4">
+                        <p className="text-sm font-semibold text-text-primary leading-snug line-clamp-2">{ticket.title}</p>
+                        {ticket.date_time && (
+                          <p className="text-xs text-text-dim mt-1.5 flex items-center gap-1.5">
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {new Date(ticket.date_time).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-surface-border/60">
+                          <span className="text-sm font-bold text-accent-400">{formatPrice(ticket.price)}</span>
+                          {!lowStock && <span className="text-xs text-text-muted">{left} left</span>}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
