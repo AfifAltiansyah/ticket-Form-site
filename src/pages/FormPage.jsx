@@ -385,11 +385,10 @@ export default function FormPage() {
               <label className={labelClass}>Event *</label>
               <select required value={form.ticket_id} onChange={updateField('ticket_id')} className={selectClass}>
                 <option value="">Choose an event</option>
-                {/*}
+                { }
                 {availableTickets.map((t) => (
-                  <option key={t.id} value={t.id}>{t.title} — {formatPrice(t.price)}</option>
-                ))} 
-                */}
+                  <option key={t.id} value={t.id}>{t.title} {/*— {formatPrice(t.price)}*/}</option>
+                ))}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
