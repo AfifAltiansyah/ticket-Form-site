@@ -34,7 +34,7 @@ export default function CheckInPage() {
     }
   }
 
-  const inputClass = 'w-full px-4 py-3 bg-white border border-surface-border rounded-btn text-[17px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all text-center tracking-[0.1em] font-mono'
+  const inputClass = 'w-full px-4 py-3 bg-white border border-surface-border rounded-btn text-[17px] text-text-primary placeholder:text-text-dim outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all text-center tracking-widest font-mono'
   const labelClass = 'block text-[13px] font-medium text-text-secondary mb-1.5'
 
   return (
@@ -86,6 +86,7 @@ export default function CheckInPage() {
               )}
             </div>
             <button
+              type="button"
               onClick={() => setResult(null)}
               className="w-full py-3 bg-accent-600 text-white rounded-btn text-sm font-medium hover:bg-accent-500 active:scale-[0.98] transition-all"
             >

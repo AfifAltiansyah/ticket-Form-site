@@ -1,8 +1,77 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap')
+layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-accent-50: #fff5f0;
+  --color-accent-100: #ffdace;
+  --color-accent-200: #ffb599;
+  --color-accent-300: #ff8f64;
+  --color-accent-400: #ff6633;
+  --color-accent-500: #fe330a;
+  --color-accent-600: #e02b07;
+  --color-accent-700: #c22306;
+
+  --color-surface-base: #efeae3;
+  --color-surface-elevated: #f8f5f0;
+  --color-surface-card: #ffffff;
+  --color-surface-hover: #f0ece5;
+  --color-surface-border: #e0d8cc;
+
+  --color-text-primary: #000000;
+  --color-text-secondary: #5c5c5c;
+  --color-text-muted: #8c8c8c;
+  --color-text-dim: #b0b0b0;
+
+  --radius-card: 16px;
+  --radius-btn: 12px;
+
+  --shadow-card:
+    0 1px 3px rgba(0, 0, 0, 0.06), 0 20px 60px -20px rgba(0, 0, 0, 0.1);
+
+  --animate-spin-slow: spin-slow 20s linear infinite;
+
+  @keyframes spin-slow {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility scrollbar-none {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@utility orange-glow {
+  filter: blur(55px);
+  background: radial-gradient(50% 50%, #ff9831 0%, #fe330a 100%);
+}
 
 @layer base {
   html {
@@ -20,17 +89,5 @@
     outline: 2px solid #fe330a;
     outline-offset: 2px;
     border-radius: 4px;
-  }
-}
-
-@layer utilities {
-  .scrollbar-none::-webkit-scrollbar { display: none; }
-  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-}
-
-@layer components {
-  .orange-glow {
-    filter: blur(55px);
-    background: radial-gradient(50% 50%, #ff9831 0%, #fe330a 100%);
   }
 }

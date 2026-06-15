@@ -200,8 +200,8 @@ export default function FormPage() {
 
   const availableTickets = tickets.filter((t) => (t.remaining ?? t.quantity) > 0)
 
-  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
-  const selectClass = `${inputClass} appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 fill=%22none%22><path d=%22M1 1.5l5 5 5-5%22 stroke=%22%23737373%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat`
+  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
+  const selectClass = `${inputClass} appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 fill=%22none%22><path d=%22M1 1.5l5 5 5-5%22 stroke=%22%23737373%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>')] bg-size-[12px] bg-position-[right_16px_center] bg-no-repeat`
   const labelClass = 'block text-[13px] font-medium text-text-secondary mb-1.5'
 
   if (loading) {
@@ -291,7 +291,7 @@ export default function FormPage() {
                   />
                   {proofFile && (
                     <div className="flex items-start gap-3 bg-surface-card rounded-btn p-3 border border-surface-border">
-                      <img src={URL.createObjectURL(proofFile)} alt="Preview" className="w-10 h-10 rounded object-cover shrink-0" />
+                      <img src={URL.createObjectURL(proofFile)} alt="Preview" className="w-10 h-10 rounded-sm object-cover shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-text-primary truncate">{proofFile.name}</p>
                         <p className="text-[11px] text-text-dim">{(proofFile.size / 1024).toFixed(0)} KB</p>
@@ -343,7 +343,7 @@ export default function FormPage() {
           </div>
 
           {/* Register Again */}
-          <button onClick={() => { setResult(null); setProofFile(null); setProofStatus('pending'); setProofError('') }}
+          <button type="button" onClick={() => { setResult(null); setProofFile(null); setProofStatus('pending'); setProofError('') }}
             className="w-full py-3 px-6 bg-accent-600 text-white rounded-btn text-sm font-medium hover:bg-accent-500 active:scale-[0.98] transition-all">
             Register Again
           </button>
@@ -355,7 +355,7 @@ export default function FormPage() {
   return (
     <div className="min-h-screen bg-surface-base flex flex-col lg:flex-row relative overflow-hidden">
       {/* Decorative glow */}
-      <div className="orange-glow absolute -right-[150px] top-[370px] -z-[1] h-[500px] w-[500px] animate-spin-slow rounded-full opacity-60" />
+      <div className="orange-glow absolute right-[-150px] top-[370px] z-[-1] h-[500px] w-[500px] animate-spin-slow rounded-full opacity-60" />
       {/* Left — Form */}
       <div className="lg:w-5/12 xl:w-4/12 flex items-start justify-center px-5 py-10 lg:py-16 overflow-y-auto">
         <div className="w-full max-w-[380px]">
@@ -411,7 +411,7 @@ export default function FormPage() {
                       setForm((p) => ({ ...p, quantity: 1 }))
                     }
                   }}
-                  className={`${inputClass} ${form.quantity > stock ? '!border-red-500/50 !ring-red-500/30' : ''}`} />
+                  className={`${inputClass} ${form.quantity > stock ? 'border-red-500/50! ring-red-500/30!' : ''}`} />
                 {form.quantity > stock && <p className="text-xs text-red-400 mt-1">Only {stock} available</p>}
               </div>
               <div>
@@ -457,6 +457,7 @@ export default function FormPage() {
                 {/* Image side */}
                 {selectedTicket.image_url && (
                   <button
+                    type="button"
                     onClick={() => setLightbox(true)}
                     className="sm:w-[45%] shrink-0 bg-[#111] flex items-center justify-center cursor-pointer group relative overflow-hidden border-b sm:border-b-0 sm:border-r border-surface-border"
                   >
@@ -466,7 +467,7 @@ export default function FormPage() {
                       className="w-full h-auto max-h-[240px] sm:max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                      <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                      <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                         </svg>
@@ -574,10 +575,11 @@ export default function FormPage() {
             {/* Lightbox */}
             {lightbox && selectedTicket.image_url && (
               <div
-                className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-[fadeIn_0.15s_ease-out]"
+                className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xs flex items-center justify-center p-4 sm:p-8 animate-[fadeIn_0.15s_ease-out]"
                 onClick={() => setLightbox(false)}
               >
                 <button
+                  type="button"
                   onClick={() => setLightbox(false)}
                   className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                 >
@@ -603,6 +605,7 @@ export default function FormPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {availableTickets.map((ticket) => (
                   <button
+                    type="button"
                     key={ticket.id}
                     onClick={() => { setTicketParam(ticket); setForm((prev) => ({ ...prev, ticket_id: String(ticket.id), quantity: 1 })) }}
                     className="text-left bg-surface-card border border-surface-border rounded-card p-4 hover:border-accent-500/50 hover:bg-surface-hover transition-all active:scale-[0.98] group"

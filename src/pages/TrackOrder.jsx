@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { lookupOrders, submitProof } from '../api/crm'
-import { isLoggedIn, getUser } from '../api/auth'
 import { useRealtimeRefresh } from '../hooks/useSupabaseRealtime'
 
 function formatPrice(n) {
@@ -73,17 +72,6 @@ export default function TrackOrder() {
   const [proofStatus, setProofStatus] = useState('pending')
   const [proofError, setProofError] = useState('')
 
-  const user = getUser()
-  const loggedIn = isLoggedIn()
-
-  // Auto-load orders if logged in
-  useEffect(() => {
-    if (loggedIn && user?.email) {
-      setEmail(user.email)
-      loadOrders(user.email)
-    }
-  }, [])
-
   // Real-time: refresh orders when transactions change
   useRealtimeRefresh('transactions', () => {
     if (email) loadOrders(email)
@@ -113,15 +101,6 @@ export default function TrackOrder() {
     e.preventDefault()
     if (!email.trim()) return
     loadOrders(email.trim())
-  }
-
-  function handleLogout() {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
-    setEmail('')
-    setOrders([])
-    setSearched(false)
-    window.location.reload()
   }
 
   async function handleProofSubmit(transactionId) {
@@ -174,26 +153,19 @@ export default function TrackOrder() {
     setProofError('')
   }
 
-  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
+  const inputClass = 'w-full px-4 py-3 bg-surface-card border border-surface-border rounded-btn text-[15px] text-text-primary placeholder:text-text-dim outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-all'
 
   return (
     <div className="min-h-screen bg-surface-base flex flex-col items-center px-4 py-10 lg:py-16 relative overflow-hidden">
       {/* Decorative glow */}
-      <div className="orange-glow absolute -left-[200px] top-[100px] -z-[1] h-[400px] w-[400px] animate-spin-slow rounded-full opacity-40" />
+      <div className="orange-glow absolute left-[-200px] top-[100px] z-[-1] h-[400px] w-[400px] animate-spin-slow rounded-full opacity-40" />
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-[28px] font-bold text-text-primary">Track My Order</h1>
           <p className="text-sm text-text-muted mt-1">
-            {loggedIn
-              ? <>Welcome back, <span className="text-text-primary font-medium">{user?.name || user?.email}</span></>
-              : 'Enter your email to view your orders and submit proof.'}
+            Enter your email to view your orders and submit proof.
           </p>
-          {loggedIn && (
-            <button onClick={handleLogout} className="mt-2 text-xs text-text-dim hover:text-red-400 transition-colors">
-              Sign out
-            </button>
-          )}
         </div>
 
         {/* Search Form */}
@@ -205,7 +177,7 @@ export default function TrackOrder() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email address"
             className={inputClass}
-            autoFocus={!loggedIn}
+            autoFocus
           />
           <button
             type="submit"
@@ -304,6 +276,7 @@ export default function TrackOrder() {
 
                     <div className="flex gap-2 mt-4">
                       <button
+                        type="button"
                         onClick={() => setExpandedId(isExpanded ? null : order.id)}
                         className="flex-1 py-2 px-3 bg-surface-card border border-surface-border text-text-secondary rounded-btn text-xs font-medium hover:bg-surface-hover active:scale-[0.98] transition-all"
                       >
@@ -311,6 +284,7 @@ export default function TrackOrder() {
                       </button>
                       {!hasProof && order.status !== 'cancelled' && (
                         <button
+                          type="button"
                           onClick={() => openProofModal(order.transaction_id)}
                           className="flex-1 py-2 px-3 bg-accent-600 text-white rounded-btn text-xs font-semibold hover:bg-accent-500 active:scale-[0.98] transition-all"
                         >
@@ -387,7 +361,7 @@ export default function TrackOrder() {
       {/* Proof Upload Modal */}
       {proofModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-[fadeIn_0.15s_ease-out]"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-[fadeIn_0.15s_ease-out]"
           onClick={() => setProofModal(null)}
         >
           <div
@@ -396,7 +370,7 @@ export default function TrackOrder() {
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-text-primary">Submit Proof of Payment</h3>
-              <button onClick={() => setProofModal(null)} className="p-1 text-text-dim hover:text-text-primary transition-colors">
+              <button type="button" onClick={() => setProofModal(null)} className="p-1 text-text-dim hover:text-text-primary transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -429,9 +403,9 @@ export default function TrackOrder() {
                   />
                   {proofFile && (
                     <div className="flex items-center gap-2 text-xs text-text-secondary">
-                      <img src={URL.createObjectURL(proofFile)} alt="Preview" className="w-8 h-8 rounded object-cover" />
+                      <img src={URL.createObjectURL(proofFile)} alt="Preview" className="w-8 h-8 rounded-sm object-cover" />
                       <span className="truncate flex-1">{proofFile.name}</span>
-                      <button onClick={() => setProofFile(null)} className="text-text-dim hover:text-red-400 transition-colors">
+                      <button type="button" onClick={() => setProofFile(null)} className="text-text-dim hover:text-red-400 transition-colors">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
