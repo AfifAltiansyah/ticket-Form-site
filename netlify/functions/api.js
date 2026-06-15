@@ -13,8 +13,9 @@ function errorResponse(status, message) {
   return { statusCode: status, headers: cors, body: JSON.stringify({ error: message }) }
 }
 
-async function proxyToCrm(method, apiPath, body, authToken) {
-  const url = CRM_API_URL + apiPath
+async function proxyToCrm(method, apiPath, body, authToken, queryString) {
+  let url = CRM_API_URL + apiPath
+  if (queryString) url += '?' + queryString
   const headers = { 'Content-Type': 'application/json', 'X-Api-Key': CRM_API_KEY }
   if (authToken) headers['Authorization'] = `Bearer ${authToken}`
   const options = { method, headers }
@@ -33,6 +34,7 @@ exports.handler = async (event) => {
   const path = event.path
     .replace('/.netlify/functions/api', '')
     .replace('/api', '') || '/'
+  const queryString = event.rawQuery || ''
   const method = event.httpMethod
   let body = {}
   try { body = JSON.parse(event.body || '{}') } catch {}
@@ -128,7 +130,7 @@ exports.handler = async (event) => {
     if (method === 'POST' && path === '/checkin') {
       const { unique_code } = body
       if (!unique_code) return errorResponse(400, 'Unique code is required')
-      return proxyToCrm(method, '/external/checkin', body, authToken)
+      return proxyToCrm(method, '/external/checkin', body, authToken, queryString)
     }
 
     // POST /api/upload-proof — upload proof image and update transaction
@@ -211,7 +213,7 @@ exports.handler = async (event) => {
     }
 
     // All other requests — proxy directly to CRM
-    return proxyToCrm(method, path, body, authToken)
+    return proxyToCrm(method, path, body, authToken, queryString)
   } catch (err) {
     console.error('API proxy error:', err)
     return errorResponse(500, 'Internal error: ' + err.message)
